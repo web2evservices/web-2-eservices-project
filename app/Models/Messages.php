@@ -1,0 +1,20 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Messages extends Model
+{
+   public function sender() {
+        return $this->belongsTo(Users::class, 'sender_id');
+    }
+
+    public function receiver() {
+        return $this->belongsTo(Users::class, 'receiver_id');
+    }
+
+    public function serviceRequest() {
+        return $this->belongsTo(ServiceRequests::class, 'service_request_id');
+    }
+}
