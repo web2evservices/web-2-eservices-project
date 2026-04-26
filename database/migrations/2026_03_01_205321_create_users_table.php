@@ -13,14 +13,13 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string("first_name");
-            $table->string("last_name");
-            $table->string("Email")->unique();
-            $table->longText("Password");
-            $table->enum('role', ['admin', 'office_user','citizen']);
-            $table->longText("phone_number");
-            $table->enum("status",["active","inactive"]);
-            $table->boolean("two_factor_enabled");
+            $table->string("username")->unique();
+            $table->string("email")->unique();
+            $table->longText("password");
+            $table->enum('role', ['admin', 'office_user','citizen'])->default('citizen');
+            $table->longText("tel");
+            $table->enum("status",["active","inactive"])->default('active');
+            $table->boolean("two_factor_enabled")->default('0');
             $table->timestamps();
         });
     }
