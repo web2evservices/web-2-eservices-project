@@ -20,6 +20,7 @@ return new class extends Migration
             $table->longText("tel");
             $table->enum("status",["active","inactive"])->default('active');
             $table->boolean("two_factor_enabled")->default('0');
+            $table ->rememberToken();
             $table->timestamps();
         });
     }

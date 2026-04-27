@@ -38,8 +38,8 @@
          <span style="color: red; font-weight: 600">{{$message}}</span>       
         @enderror
         <input type="tel" name="tel" value="{{ old('tel') }}" placeholder="Phone Number" required>
-        @error('TelNumber')
-        <span style="color: red; font-weight: 600">{{$message}}</span>        
+        @error('tel')
+        <span style="color: red; font-weight: 600">The telephone number already exist</span>        
         @enderror
         <button type="submit">Sign Up</button>
     </form>
@@ -60,7 +60,9 @@
         @enderror
         <input type="email" name="email" value="{{ old('email') }}" placeholder="Email" required>
         <input type="password" name="password" value="{{ old('password') }}" placeholder="Password" required>
-    
+        @error('login')
+        <a href="/forget-password" style="color: blue;">Forgot password?</a>
+        @enderror
         <button type="submit">Log In</button>
     </form>
     </div>
