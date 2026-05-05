@@ -14,11 +14,11 @@ return new class extends Migration
         Schema::create('services', function (Blueprint $table) {
             $table->id();
             $table->foreignId('office_id')->
-            constrained('government__offices')->
+            constrained('government_offices')->
             onDelete('cascade');
             $table->string('name');
             $table->foreignId('category_id')->
-            constrained('service__categories')->
+            constrained('service_categories')->
             onDelete('cascade');
             $table->decimal('price', 10, 2);
             $table->integer('duration'); 

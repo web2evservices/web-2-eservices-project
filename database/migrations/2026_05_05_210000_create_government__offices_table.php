@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('government__offices', function (Blueprint $table) {
+        Schema::create('government_offices', function (Blueprint $table) {
             $table->id();
             $table->string("name");
             $table->longText("address");
@@ -19,8 +19,8 @@ return new class extends Migration
             $table->decimal('longitude', 10, 7);  
             $table->string('contact_info')->nullable();
             $table->foreignId("municipality_id")
-            ->constrained("users")
-            ->onDelete("cascade");
+            ->constrained("municipalities")
+            ->cascadeOnDelete();
             $table->timestamps();
         });
     }

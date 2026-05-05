@@ -33,4 +33,8 @@ class Users extends Model
     public function notifications() {
         return $this->hasMany(Notifications::class);
     }
+
+    public function office() {
+        return $this->belongsTo(Office::class);
+    }
 }

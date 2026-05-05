@@ -21,6 +21,8 @@ return new class extends Migration
             $table->longText("phone_number");
             $table->enum("status",["active","inactive"]);
             $table->boolean("two_factor_enabled");
+            $table->foreignId('office_id')->nullable()->constrained('government_offices')->nullOnDelete();
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

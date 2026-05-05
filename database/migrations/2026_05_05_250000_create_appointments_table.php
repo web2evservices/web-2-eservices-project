@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('appointments', function (Blueprint $table) {
             $table->id();
             $table->foreignId('office_id')->
-            constrained('government__offices')->
+            constrained('government_offices')->
             onDelete('cascade');
             $table->foreignId('citizen_id')->
             constrained('users')->
