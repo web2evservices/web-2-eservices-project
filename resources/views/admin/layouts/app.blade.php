@@ -24,6 +24,12 @@
             <a href="/admin/offices" class="d-block mb-2">Offices</a>
             <a href="/admin/users" class="d-block mb-2">Users</a>
             <a href="/admin/analytics" class="d-block mb-2">Analytics</a>
+            <form method="POST" action="{{ route('logout') }}">
+    @csrf
+    <button type="submit" class="btn btn-danger">
+        Logout
+    </button>
+</form>
         </div>
 
         <!-- Content -->

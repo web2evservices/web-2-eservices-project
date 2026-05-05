@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Illuminate\Support\Facades\Auth;
 
-class AdminMiddleware
+class OfficeMiddleware
 {
     /**
      * Handle an incoming request.
@@ -20,8 +20,8 @@ class AdminMiddleware
             return redirect('/login');
         }
 
-        if (Auth::user()->role !== 'admin') {
-            abort(403, 'Admins only');
+        if (Auth::user()->role !== 'office_user') {
+            abort(403, 'Office users only');
         }
 
         return $next($request);

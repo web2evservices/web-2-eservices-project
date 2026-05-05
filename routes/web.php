@@ -1,28 +1,63 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ResetPassController;
+use App\Http\Controllers\SocialAuthController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminDashboardController;
 use App\Http\Controllers\MunicipalityController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AnalyticsController;
 
+
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::prefix('admin')->group(function () {
+Route::get('/login', [UserController::class, 'LoginView']);
+Route::post('/login', [UserController::class, 'Login'])->name('login');
 
-    Route::get('dashboard', [AdminDashboardController::class,'index']);
+Route::post('/create', [UserController::class, 'create']);
+Route::get('/home', [UserController::class, 'home']);
+
+Route::post('/logout', [UserController::class, 'logout'])->name('logout');
+
+
+Route::get('/forget-password', [ResetPassController::class, 'forgotView']);
+Route::post('/forget-password', [ResetPassController::class, 'sendResetLink']);
+
+Route::get('/reset-password/{token}', [ResetPassController::class, 'resetView'])
+    ->name('password.reset');
+
+Route::post('/reset-password', [ResetPassController::class, 'resetPassword'])
+    ->name('password.update');
+
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
+    ->name('oauth.redirect');
+
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
+    ->name('oauth.callback');
+
+Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
+
+    Route::get('dashboard', [AdminDashboardController::class,'index'])
+        ->name('admin.dashboard');
 
     Route::resource('municipalities', MunicipalityController::class);
-    Route::get('municipalities/create', [MunicipalityController::class, 'create'])->name('municipalities.create');
-    Route::get('/admin/municipalities/{municipality}/edit', [MunicipalityController::class, 'edit'])->name('municipalities.edit');
-    Route::put('/admin/municipalities/{municipality}', [MunicipalityController::class, 'update'])->name('municipalities.update');
     Route::resource('offices', OfficeController::class);
-    Route::get('/admin/offices/{office}/edit', [OfficeController::class, 'edit'])->name('offices.edit');
-    Route::put('/admin/offices/{office}', [OfficeController::class, 'update'])->name('offices.update');
-    Route::get('users', [AdminUserController::class,'index']);
-    Route::patch('users/{id}/toggle', [AdminUserController::class,'toggle']);
-    Route::get('analytics', [AnalyticsController::class,'index']);
+
+    Route::get('users', [AdminUserController::class,'index'])
+        ->name('admin.users.index');
+
+    Route::patch('users/{id}/toggle', [AdminUserController::class,'toggle'])
+        ->name('admin.users.toggle');
+
+    Route::get('analytics', [AnalyticsController::class,'index'])
+        ->name('admin.analytics');
+});
+Route::middleware(['auth'])->group(function () {
+
+    Route::get('/user/dashboard', [UserController::class,'dashboard'])
+        ->name('user.dashboard');
 });

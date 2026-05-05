@@ -7,6 +7,7 @@
 <table class="table table-bordered">
 
 <tr>
+    <th>ID</th>
     <th>Name</th>
     <th>Email</th>
     <th>Role</th>
@@ -17,9 +18,10 @@
 
 @foreach($users as $u)
 <tr>
-    <td>{{ $u->name }}</td>
+    <td>{{$u->id}}
+    <td>{{ $u->username }}</td>
     <td>{{ $u->email }}</td>
-    <td>{{ $u->getRoleNames()->first() }}</td>
+    <td>{{ $u->role }}</td>
     <td>{{ $u->office->name ?? '-' }}</td>
     <td>
         @if($u->is_active)

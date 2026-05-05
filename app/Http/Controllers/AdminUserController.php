@@ -3,19 +3,19 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\Users;
+use App\Models\User;
 
 class AdminUserController extends Controller
 {
     public function index()
     {
-        $users = Users::with('roles','office')->paginate(15);
+        $users = User::with('office')->paginate(15);
         return view('admin.users.index', compact('users'));
     }
 
     public function toggle($id)
     {
-        $user = Users::findOrFail($id);
+        $user = User::findOrFail($id);
         $user->is_active = !$user->is_active;
         $user->save();
 

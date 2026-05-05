@@ -7,6 +7,7 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use App\Models\Office;
 
 class User extends Authenticatable
 {
@@ -19,9 +20,15 @@ class User extends Authenticatable
      * @var list<string>
      */
     protected $fillable = [
-        'name',
+        'username',
         'email',
         'password',
+        'tel',
+        'role',
+        'status',
+        'two-factor-enabled',
+        'oauth_provider',
+        'oauth_id'
     ];
 
     /**
@@ -46,4 +53,9 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function office()
+   {
+    return $this->belongsTo(Office::class);
+   }
 }
