@@ -13,35 +13,52 @@ class UserController extends Controller
     {
         return view('login');
     }
-    public function home()
+
+    public function dashboard()
     {
-        return view('home');
+        return view('users.dashboard');
     }
+
     public function create(Request $request)
     {
-        $request ->validate([
-        'username' => 'required|string|unique:users,username',
-        'email' => 'required|email|unique:users,email',
-        'password' => 'required|min:6',
-        'confirm-password' => 'required|same:password',
-        'tel' => 'required|min:8|unique:users,tel'
+        $request->validate([
+            'username' => 'required|string|unique:users,username',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|min:6',
+            'confirm-password' => 'required|same:password',
+            'tel' => 'required|min:8|unique:users,tel'
         ]);
-        User::create([
+
+        $user = User::create([
             'username' => $request->username,
             'email' => $request->email,
-            'password'=>Hash::make($request->password),
-            'tel'=>$request->tel
+            'password' => Hash::make($request->password),
+            'tel' => $request->tel
         ]);
-        return redirect('/home'); //or wtver the 'home' will be
+
+        Auth::login($user);
+        return redirect()->route('user.dashboard');
     }
+
     public function login(Request $request)
     {
         if (!Auth::attempt($request->only('email', 'password'))) {
-        return back()->withErrors([
-            'login' => 'Email or password incorrect',
-        ]);
+            return back()->withErrors([
+                'login' => 'Email or password incorrect',
+            ]);
+        }
+
+        $user = Auth::user();
+        if ($user->role == 'admin') {
+            return redirect()->route('admin.dashboard');
+        }
+
+        return redirect()->route('user.dashboard');
     }
 
-    return redirect('/home'); //or wtver the 'home' will be
+    public function logout()
+    {
+        Auth::logout();
+        return redirect('/login');
     }
 }

@@ -13,17 +13,16 @@ return new class extends Migration
     {
         Schema::create('users', function (Blueprint $table) {
             $table->id();
-            $table->string("username");
-            $table->string("email")->unique();
-            $table->longText("password");
-            $table->enum('role', ['admin', 'office_user','citizen'])->default('citizen');
-            $table->longText("tel")->nullable();
-            $table->enum("status",["active","inactive"])->default('active');
-            $table->boolean("two_factor_enabled")->default('0');
-            $table->string('oauth_provider')->nullable();
-            $table->string('oauth_id')->nullable();
+            $table->string("first_name");
+            $table->string("last_name");
+            $table->string("Email")->unique();
+            $table->longText("Password");
+            $table->enum('role', ['admin', 'office_user','citizen']);
+            $table->longText("phone_number");
+            $table->enum("status",["active","inactive"]);
+            $table->boolean("two_factor_enabled");
+            $table->foreignId('office_id')->nullable()->constrained('government_offices')->nullOnDelete();
             $table->boolean('is_active')->default(true);
-            $table->rememberToken();
             $table->timestamps();
         });
     }
