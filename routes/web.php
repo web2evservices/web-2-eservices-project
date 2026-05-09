@@ -26,21 +26,22 @@ Route::post('/login', [UserController::class, 'Login'])->name('login');
 
 Route::post('/create', [UserController::class, 'create']);
 
+
+Route::get('/otp-verify',  [UserController::class, 'otpView']);
+Route::post('/otp-verify', [UserController::class, 'otpVerify']);
+Route::post('/otp-resend', [UserController::class, 'otpResend']);
 Route::post('/logout', [UserController::class, 'logout'])->name('logout');
 Route::get('/forget-password', [ResetPassController::class, 'forgotView']);
 Route::post('/forget-password', [ResetPassController::class, 'sendResetLink']);
 
 Route::get('/reset-password/{token}', [ResetPassController::class, 'resetView'])
-    ->name('password.reset');
+->name('password.reset');
 
 Route::post('/reset-password', [ResetPassController::class, 'resetPassword'])
-    ->name('password.update');
+->name('password.update');
 
-Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])
-    ->name('oauth.redirect');
-
-Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])
-    ->name('oauth.callback');
+Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('oauth.callback');
+Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('oauth.redirect');
 
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
     Route::get('dashboard', [AdminDashboardController::class, 'index'])
