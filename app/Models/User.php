@@ -26,6 +26,7 @@ class User extends Authenticatable
         'tel',
         'role',
         'status',
+        'office_id',
         'two-factor-enabled',
         'oauth_provider',
         'oauth_id'

@@ -6,6 +6,23 @@ use Illuminate\Database\Eloquent\Model;
 
 class Services extends Model
 {
+
+    protected $table = 'services';
+
+    protected $fillable = [
+        'office_id',
+        'name',
+        'category_id',
+        'price',
+        'duration',
+        'required_documents',
+    ];
+
+    protected $casts = [
+        'required_documents' => 'array',
+    ];
+
+    
        public function office() {
         return $this->belongsTo(Government_Offices::class, 'office_id');
     }

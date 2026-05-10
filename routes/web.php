@@ -10,6 +10,12 @@ use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AnalyticsController;
 
+
+use App\Http\Controllers\Office\OfficeDashboardController;
+use App\Http\Controllers\Office\ServiceCategoryController;
+use App\Http\Controllers\Office\ServiceController;
+use App\Http\Controllers\Office\OfficeProfileController;
+use App\Http\Controllers\Office\QrCodeController;
 /*
 |--------------------------------------------------------------------------
 | Public Routes
@@ -59,3 +65,48 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])
         ->name('user.dashboard');
 });
+
+
+// =============================================
+// PERSON 3: Government Office Routes
+// =============================================
+Route::prefix('office')->middleware(['auth', 'office'])->name('office.')->group(function () {
+
+    // Dashboard
+    Route::get('/dashboard', [OfficeDashboardController::class, 'index'])
+        ->name('dashboard');
+
+    // Office Profile
+    Route::get('/profile/edit', [OfficeProfileController::class, 'edit'])
+        ->name('profile.edit');
+    Route::put('/profile', [OfficeProfileController::class, 'update'])
+        ->name('profile.update');
+
+    // Service Categories (manual routes to avoid model binding issues with Service_Categories)
+    Route::get('/categories',          [ServiceCategoryController::class, 'index'])->name('categories.index');
+    Route::get('/categories/create',   [ServiceCategoryController::class, 'create'])->name('categories.create');
+    Route::post('/categories',         [ServiceCategoryController::class, 'store'])->name('categories.store');
+    Route::get('/categories/{id}/edit',[ServiceCategoryController::class, 'edit'])->name('categories.edit');
+    Route::put('/categories/{id}',     [ServiceCategoryController::class, 'update'])->name('categories.update');
+    Route::delete('/categories/{id}',  [ServiceCategoryController::class, 'destroy'])->name('categories.destroy');
+
+    // Services
+    Route::get('/services',          [ServiceController::class, 'index'])->name('services.index');
+    Route::get('/services/create',   [ServiceController::class, 'create'])->name('services.create');
+    Route::post('/services',         [ServiceController::class, 'store'])->name('services.store');
+    Route::get('/services/{id}/edit',[ServiceController::class, 'edit'])->name('services.edit');
+    Route::put('/services/{id}',     [ServiceController::class, 'update'])->name('services.update');
+    Route::delete('/services/{id}',  [ServiceController::class, 'destroy'])->name('services.destroy');
+
+    // QR Codes
+    Route::get('/qr/{requestId}',          [QrCodeController::class, 'show'])->name('qr.show');
+    Route::get('/qr/{requestId}/download', [QrCodeController::class, 'download'])->name('qr.download');
+});
+
+// Public QR tracking page — no login required
+Route::get('/track/{qrCode}', function ($qrCode) {
+    $request = \App\Models\ServiceRequests::where('qr_code', $qrCode)
+        ->with(['service.office', 'citizen'])
+        ->firstOrFail();
+    return view('office.public.track', compact('request'));
+})->name('requests.track');

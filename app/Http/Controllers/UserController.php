@@ -40,21 +40,25 @@ class UserController extends Controller
         return redirect()->route('user.dashboard');
     }
 
-    public function login(Request $request)
-    {
-        if (!Auth::attempt($request->only('email', 'password'))) {
-            return back()->withErrors([
-                'login' => 'Email or password incorrect',
-            ]);
-        }
+    
+public function login(Request $request)
+{
+    if (!Auth::attempt($request->only('email', 'password'))) {
+        return back()->withErrors([
+            'login' => 'Email or password incorrect',
+        ]);
+    }
 
-        $user = Auth::user();
-        if ($user->role == 'admin') {
-            return redirect()->route('admin.dashboard');
-        }
-
+    $user = Auth::user();
+    
+    if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    } elseif ($user->role === 'office_user') {
+        return redirect()->route('office.dashboard');
+    } else {
         return redirect()->route('user.dashboard');
     }
+}
 
     public function logout()
     {

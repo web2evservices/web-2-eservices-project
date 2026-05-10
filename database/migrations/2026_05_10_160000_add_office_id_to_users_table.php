@@ -11,11 +11,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('reoprt_logs', function (Blueprint $table) {
-               $table->id();
-               $table->string('report_type');
-               $table->json('data');
-               $table->timestamp('generated_at');
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('office_id')->nullable()->constrained('offices')->nullOnDelete();
         });
     }
 
@@ -24,6 +21,8 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('reoprt__logs');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('office_id');
+        });
     }
 };
