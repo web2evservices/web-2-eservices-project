@@ -121,9 +121,14 @@ class UserController extends Controller
         // FIX 2: Actually log the user in and redirect by role
         Auth::login($user);
 
-        return $user->role === 'admin'
-            ? redirect()->route('admin.dashboard')
-            : redirect()->route('user.dashboard');
+           
+    if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    } elseif ($user->role === 'office_user') {
+        return redirect()->route('office.dashboard');
+    } else {
+        return redirect()->route('user.dashboard');
+    }
     }
 
     public function otpResend()
