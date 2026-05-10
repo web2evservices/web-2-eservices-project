@@ -22,6 +22,7 @@ return new class extends Migration
             $table->boolean("two_factor_enabled")->default('0');
             $table->string('oauth_provider')->nullable();
             $table->string('oauth_id')->nullable();
+            $table->foreignId('office_id')->nullable()->constrained('government_offices')->nullOnDelete();
             $table->boolean('is_active')->default(true);
             $table->rememberToken();
             $table->timestamps();

@@ -43,6 +43,6 @@ class SocialAuthController extends Controller
 
         Auth::login($user, remember: true);
 
-        return redirect('/home');
+        return view('users.dashboard');
     }
 }
