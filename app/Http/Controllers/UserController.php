@@ -16,7 +16,6 @@ class UserController extends Controller
         return view('login');
     }
 
-    // FIX 3: Renamed from home() to match the route which calls 'dashboard'
     public function dashboard()
     {
         return view('users.dashboard');
@@ -51,14 +50,12 @@ class UserController extends Controller
             'password' => 'required',
         ]);
 
-        // FIX 1: Use the $user fetched from DB — do NOT call Auth::user() before logging in
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return back()->withErrors(['login' => 'Email or password incorrect']);
         }
 
-        // FIX 1: Check 2FA first — if enabled, send OTP and hold off on logging in
         if ($user->two_factor_enabled) {
             $otp = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 
@@ -73,7 +70,6 @@ class UserController extends Controller
             return redirect('/otp-verify')->with('status', 'A verification code was sent to your email.');
         }
 
-        // No 2FA — log in directly and redirect based on role
         Auth::login($user, $request->boolean('remember'));
 
     if ($user->role === 'admin') {
@@ -118,7 +114,6 @@ class UserController extends Controller
         $user = User::findOrFail($userId);
         session()->forget(['2fa_user_id', '2fa_otp', '2fa_expires']);
 
-        // FIX 2: Actually log the user in and redirect by role
         Auth::login($user);
 
            
@@ -152,7 +147,34 @@ class UserController extends Controller
         return redirect('/otp-verify')->with('status', 'A new code was sent to your email.');
     }
 
+    public function updateRole(Request $request, $id)
+    {
+    $request->validate([
+        'role' => 'required|in:citizen,office_user,admin',
+    ]);
 
+    $user = User::findOrFail($id);
+    $user->role = $request->role;
+    $user->save();
+
+    return redirect()->route('admin.users.index');
+    }
+     public function destroy($id)
+    {
+        $user = User::findOrFail($id);
+
+        if ($user->role === 'admin') {
+            return back()->with('error','You cannot delete an admin.');
+        }
+        if ($user->role === 'office_user' && $user->office) {
+        $user->office->delete();
+    }
+
+        $user->delete();
+
+        return redirect()->route('admin.users.index');
+    }
+    
     public function logout()
     {
         Auth::logout();

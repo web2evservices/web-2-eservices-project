@@ -3,14 +3,14 @@
 namespace App\Http\Controllers\Office;
 
 use App\Http\Controllers\Controller;
-use App\Models\Service_Categories;
+use App\Models\ServiceCategory;
 use Illuminate\Http\Request;
 
 class ServiceCategoryController extends Controller
 {
     public function index()
     {
-        $categories = Service_Categories::withCount('services')->get();
+        $categories = ServiceCategory::withCount('services')->get();
         return view('office.categories.index', compact('categories'));
     }
 
@@ -26,7 +26,7 @@ class ServiceCategoryController extends Controller
             'description' => 'nullable|string',
         ]);
 
-        Service_Categories::create($request->only('name', 'description'));
+        ServiceCategory::create($request->only('name', 'description'));
 
         return redirect()->route('office.categories.index')
             ->with('success', 'Category created successfully.');
@@ -35,13 +35,13 @@ class ServiceCategoryController extends Controller
     
 public function edit($id)
 {
-    $category = Service_Categories::findOrFail($id);
+    $category = ServiceCategory::findOrFail($id);
     return view('office.categories.edit', compact('category'));
 }
 
 public function update(Request $request, $id)
 {
-    $category = Service_Categories::findOrFail($id);
+    $category = ServiceCategory::findOrFail($id);
 
     $request->validate([
         'name'        => 'required|string|max:255|unique:service__categories,name,' . $id,
@@ -56,7 +56,7 @@ public function update(Request $request, $id)
 
 public function destroy($id)
 {
-    $category = Service_Categories::findOrFail($id);
+    $category = ServiceCategory::findOrFail($id);
     $category->delete();
     return redirect()->route('office.categories.index')
         ->with('success', 'Category deleted.');

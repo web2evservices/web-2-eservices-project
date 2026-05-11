@@ -13,10 +13,23 @@
 
 <input class="form-control mb-2" name="address" placeholder="Address" required>
 
-<select class="form-control mb-2" name="municipality_id">
-<option value="" disabled selected hidden>Select Municipality</option>>
+<!-- MUNICIPALITY -->
+<select class="form-control mb-2" name="municipality_id" required>
+    <option value="" disabled selected>Select Municipality</option>
+
     @foreach($municipalities as $id => $name)
         <option value="{{ $id }}">{{ $name }}</option>
+    @endforeach
+</select>
+
+<!-- OFFICE USER -->
+<select name="user_id" class="form-control mb-3">
+    <option value="">Select Office User (optional)</option>
+
+    @foreach($officeUsers as $user)
+        <option value="{{ $user->id }}">
+            {{ $user->username }}
+        </option>
     @endforeach
 </select>
 

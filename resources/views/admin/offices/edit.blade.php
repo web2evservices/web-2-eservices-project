@@ -38,6 +38,20 @@
         </select>
     </div>
 
+    <div class="mb-3">
+        <label>Office User</label>
+        <select name="user_id" class="form-select">
+    <option value="">Select Office User</option>
+
+    @foreach($officeUsers as $user)
+        <option value="{{ $user->id }}"
+            {{ isset($office) && $office->user_id == $user->id ? 'selected' : '' }}>
+            {{ $user->username }}
+        </option>
+    @endforeach
+</select>
+    </div>
+
     <button class="btn btn-success">Update</button>
     <a href="/admin/offices" class="btn btn-secondary">Back</a>
 </form>

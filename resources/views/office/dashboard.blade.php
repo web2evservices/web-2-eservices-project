@@ -5,7 +5,7 @@
 @section('content')
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
-        <h3 class="mb-1">Welcome back, {{ Auth::user()->first_name }} 👋</h3>
+        <h3 class="mb-1">Welcome back, {{ Auth::user()->username }} 👋</h3>
         <p class="text-muted mb-0">{{ $office ? $office->name : 'No office assigned yet' }}</p>
     </div>
 </div>

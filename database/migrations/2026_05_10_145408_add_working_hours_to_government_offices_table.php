@@ -8,14 +8,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('government__offices', function (Blueprint $table) {
+        Schema::table('government_offices', function (Blueprint $table) {
             $table->string('working_hours')->nullable()->after('contact_info');
         });
     }
 
     public function down(): void
     {
-        Schema::table('government__offices', function (Blueprint $table) {
+        Schema::table('government_offices', function (Blueprint $table) {
             $table->dropColumn('working_hours');
         });
     }
