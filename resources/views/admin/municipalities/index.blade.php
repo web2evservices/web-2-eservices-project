@@ -23,7 +23,7 @@
         <td>{{ $m->city }}</td>
         <td>
             <a href="{{ route('municipalities.edit', $m->id) }}" class="btn btn-warning btn-sm">Edit</a>
-            <form method="POST" action="/admin/municipalities/{{ $m->id }}">
+            <form method="POST" action="/admin/municipalities/{{ $m->id }}" class="d-inline">
                 @csrf
                 @method('DELETE')
                 <button class="btn btn-danger btn-sm">Delete</button>

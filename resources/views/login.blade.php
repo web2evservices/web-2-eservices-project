@@ -11,7 +11,7 @@
 <body>
     <div class="container" id="container">
     <div class="form-container sign-up">
-    <form action="/create" method="post">
+    <form action="/create" method="POST">
         @csrf
         <h1>Create Account</h1>
         <div class="social-icons">
@@ -43,7 +43,7 @@
     </form>
     </div>
     <div class="form-container sign-in">
-    <form action="/login" method="post">
+    <form action="/login" method="POST">
         @csrf
         <h1>Log In</h1>
         <div class="social-icons">

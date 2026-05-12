@@ -14,6 +14,7 @@ return new class extends Migration
         Schema::create('offices', function (Blueprint $table) {
              $table->id();
              $table->foreignId('municipality_id')->constrained()->cascadeOnDelete();
+             $table->foreignId('user_id')->nullable()->constrained()->nullOnDelete();
              $table->string('name');
              $table->string('email');
              $table->string('phone')->nullable();

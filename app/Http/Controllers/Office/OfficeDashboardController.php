@@ -5,13 +5,14 @@ namespace App\Http\Controllers\Office;
 use App\Http\Controllers\Controller;
 use App\Models\Services;
 use App\Models\ServiceRequests;
+use App\Models\Office;
 use Illuminate\Support\Facades\Auth;
 
 class OfficeDashboardController extends Controller
 {
     public function index()
     {
-        $office = Auth::user()->office;
+        $office = Office::where('user_id', Auth::id())->first();
 
         if (!$office) {
             return view('office.dashboard', [

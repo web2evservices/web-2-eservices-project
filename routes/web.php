@@ -58,6 +58,10 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         ->name('admin.users.index');
     Route::patch('users/{id}/toggle', [AdminUserController::class, 'toggle'])
         ->name('admin.users.toggle');
+    Route::patch('users/{id}/role', [UserController::class, 'updateRole'])
+    ->name('admin.users.role');
+    Route::delete('/users/{id}/delete', [UserController::class, 'destroy'])
+        ->name('admin.users.delete');
     Route::get('analytics', [AnalyticsController::class, 'index'])
         ->name('admin.analytics');
 });

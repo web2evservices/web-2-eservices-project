@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Office;
 
 use App\Http\Controllers\Controller;
 use App\Models\Services;
-use App\Models\Service_Categories;
+use App\Models\ServiceCategory;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -39,7 +39,7 @@ class ServiceController extends Controller
                 ->with('error', 'Please create your office profile before adding services.');
         }
 
-        $categories = Service_Categories::all();
+        $categories = ServiceCategory::all();
         return view('office.services.create', compact('categories'));
     }
 
@@ -78,7 +78,7 @@ class ServiceController extends Controller
     {
         $service = Services::findOrFail($id);
         $this->authorizeOffice($service);
-        $categories = Service_Categories::all();
+        $categories = ServiceCategory::all();
         return view('office.services.edit', compact('service', 'categories'));
     }
 

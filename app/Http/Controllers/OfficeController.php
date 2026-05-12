@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Office;
 use App\Models\Municipality;
+use App\Models\User;
 
 class OfficeController extends Controller
 {
@@ -13,7 +14,7 @@ class OfficeController extends Controller
      */
     public function index()
     {
-        $offices = Office::with('municipality')->paginate(10);
+        $offices = Office::with('municipality','user')->paginate(10);
         return view('admin.offices.index', compact('offices'));
     }
 
@@ -23,7 +24,8 @@ class OfficeController extends Controller
     public function create()
     {
         $municipalities = Municipality::pluck('name','id');
-        return view('admin.offices.create', compact('municipalities'));
+        $officeUsers = User::where('role', 'office_user')->get();
+        return view('admin.offices.create', compact('municipalities', 'officeUsers'));
     }
 
     /**
@@ -31,12 +33,30 @@ class OfficeController extends Controller
      */
     public function store(Request $request)
     {
-        Office::create($request->validate([
+       $validated = $request->validate([
             'name'=>'required',
             'email'=>'required|email',
             'municipality_id'=>'required',
-            'address'=>'required'
-        ]));
+            'address'=>'required',
+            'user_id' => 'nullable|exists:users,id'
+        ]);
+
+        if (!empty($validated['user_id'])) {
+        $user = User::findOrFail($validated['user_id']);
+
+        if ($user->role !== 'office_user') {
+            return back()->withErrors([
+                'user_id' => 'Selected user is not an office user.'
+            ]);
+        }
+        }
+        Office::create([
+        'name' => $validated['name'],
+        'email' => $validated['email'],
+        'municipality_id' => $validated['municipality_id'],
+        'address' => $validated['address'],
+        'user_id' => $validated['user_id'] ?? null,
+    ]);
 
         return redirect()->route('offices.index');
     }
@@ -54,8 +74,9 @@ class OfficeController extends Controller
      */
     public function edit(Office $office) 
     {
+        $officeUsers = User::where('role', 'office_user')->get();
         $municipalities = Municipality::all();
-        return view('admin.offices.edit', compact('office', 'municipalities'));
+        return view('admin.offices.edit', compact('office', 'municipalities', 'officeUsers'));
     }
 
     /**
@@ -63,18 +84,29 @@ class OfficeController extends Controller
      */
     public function update(Request $request, Office $office)
     {
-        $request->validate([
+        $validated = $request->validate([
         'name' => 'required',
         'email' => 'required|email',
         'address' => 'required',
         'municipality_id' => 'required',
+        'user_id' => 'nullable|exists:users,id'
     ]);
+        if (!empty($validated['user_id'])) {
+        $user = User::findOrFail($validated['user_id']);
+
+        if ($user->role !== 'office_user') {
+            return back()->withErrors([
+                'user_id' => 'Selected user is not an office user.'
+            ]);
+        }
+        }
 
         $office->update([
-        'name' => $request->name,
-        'email' => $request->email,
-        'address' => $request->address,
-        'municipality_id' => $request->municipality_id,
+        'name' => $validated['name'],
+        'email' => $validated['email'],
+        'address' => $validated['address'],
+        'municipality_id' => $validated['municipality_id'],
+        'user_id' => $validated['user_id'] ?? null,
     ]);
 
         return redirect('/admin/offices')->with('success', 'Office updated');

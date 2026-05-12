@@ -13,6 +13,7 @@
     <th>Municipality</th>
     <th>Email</th>
     <th>Address</th>
+    <th>Office User</th>
     <th>Status</th>
     <th>Actions</th>
 </tr>
@@ -24,6 +25,7 @@
     <td>{{ $o->municipality->name }}</td>
     <td>{{ $o->email }}</td>
     <td>{{$o->address}}</td>
+    <td>{{ $o->user->username ?? 'Not assigned' }}</td>
     <td>
         @if($o->is_active)
             <span class="text-success">Active</span>
@@ -33,9 +35,9 @@
     </td>
     <td>
         <a href="{{ route('offices.edit', $o->id) }}" class="btn btn-warning btn-sm">Edit</a>
-        <form method="POST" action="/admin/offices/{{ $o->id }}">
+        <form method="POST" action="/admin/offices/{{ $o->id }}" class="d-inline">
             @csrf @method('DELETE')
-            <button class="btn btn-danger btn-sm">Delete</button>
+            <button class="btn btn-danger btn-sm" >Delete</button>
         </form>
     </td>
 </tr>

@@ -8,6 +8,7 @@ class Office extends Model
 {
     protected $fillable = [
         'municipality_id',
+        'user_id',
         'name',
         'email',
         'phone',
@@ -24,8 +25,8 @@ class Office extends Model
         return $this->belongsTo(Municipality::class);
     }
 
-    public function users()
+    public function user()
     {
-        return $this->hasMany(User::class);
+       return $this->belongsTo(User::class, 'user_id');
     }
 }
