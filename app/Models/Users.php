@@ -37,4 +37,9 @@ class Users extends Model
     public function office() {
         return $this->belongsTo(Office::class);
     }
+
+    public function governmentOffice()
+    {
+        return $this->hasOne(Government_Offices::class, 'user_id');
+    }
 }

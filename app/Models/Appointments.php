@@ -6,7 +6,20 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointments extends Model
 {
-     public function office() {
+    protected $fillable = [
+        'office_id',
+        'service_id',
+        'citizen_id',
+        'citizen_name',
+        'citizen_email',
+        'citizen_phone',
+        'date',
+        'time_slot',
+        'status',
+        'notes',
+    ];
+
+    public function office() {
         return $this->belongsTo(Government_Offices::class, 'office_id');
     }
 

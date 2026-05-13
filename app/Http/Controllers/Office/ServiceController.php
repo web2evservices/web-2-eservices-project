@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Office;
 
 use App\Http\Controllers\Controller;
+use App\Models\Government_Offices;
 use App\Models\Services;
 use App\Models\ServiceCategory;
 use Illuminate\Http\Request;
@@ -12,7 +13,34 @@ class ServiceController extends Controller
 {
     private function getOffice()
     {
-        return Auth::user()->office;
+        $userOffice = Auth::user()->office;
+
+        if (!$userOffice) {
+            return null;
+        }
+
+        $governmentOffice = Government_Offices::firstOrCreate(
+            ['user_id' => Auth::id()],
+            [
+                'name' => $userOffice->name,
+                'address' => $userOffice->address,
+                'municipality_id' => $userOffice->municipality_id,
+                'contact_info' => $userOffice->contact_info ?? '',
+                'latitude' => $userOffice->latitude ?? 0,
+                'longitude' => $userOffice->longitude ?? 0,
+            ]
+        );
+
+        $governmentOffice->update([
+            'name' => $userOffice->name,
+            'address' => $userOffice->address,
+            'municipality_id' => $userOffice->municipality_id,
+            'contact_info' => $userOffice->contact_info ?? '',
+            'latitude' => $userOffice->latitude ?? 0,
+            'longitude' => $userOffice->longitude ?? 0,
+        ]);
+
+        return $governmentOffice;
     }
 
     public function index()
@@ -47,8 +75,8 @@ class ServiceController extends Controller
     {
         $request->validate([
             'name'                   => 'required|string|max:255',
-            'category_id'            => 'required|exists:service__categories,id',
-            'price'                  => 'required|numeric|min:0',
+            'category_id'            => 'required|exists:service_categories,id',
+            'price'                  => 'required|numeric|min:0|max:99999999.99',
             'duration'               => 'required|integer|min:1',
             'required_documents'     => 'nullable|array',
             'required_documents.*'   => 'string|max:255',
@@ -89,8 +117,8 @@ class ServiceController extends Controller
 
         $request->validate([
             'name'                   => 'required|string|max:255',
-            'category_id'            => 'required|exists:service__categories,id',
-            'price'                  => 'required|numeric|min:0',
+            'category_id'            => 'required|exists:service_categories,id',
+            'price'                  => 'required|numeric|min:0|max:99999999.99',
             'duration'               => 'required|integer|min:1',
             'required_documents'     => 'nullable|array',
             'required_documents.*'   => 'string|max:255',

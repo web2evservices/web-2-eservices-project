@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Government_Offices extends Model
 {
-    protected $table = 'government__offices'; // double underscore
+    protected $table = 'government_offices';
 
     protected $fillable = [
         'name',

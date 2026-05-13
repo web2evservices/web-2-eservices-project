@@ -40,7 +40,7 @@
                 <table class="table table-sm table-borderless mb-0">
                     <tr><th width="140">Request ID</th><td>#{{ $serviceRequest->id }}</td></tr>
                     <tr><th>Service</th><td>{{ $serviceRequest->service->name }}</td></tr>
-                    <tr><th>Citizen</th><td>{{ $serviceRequest->citizen->first_name }} {{ $serviceRequest->citizen->last_name }}</td></tr>
+                    <tr><th>Citizen</th><td>{{ $serviceRequest->citizen->username ?? $serviceRequest->citizen->email ?? 'N/A' }}</td></tr>
                     <tr><th>Status</th>
                         <td>
                             <span class="badge bg-{{ $serviceRequest->status === 'Approved' ? 'success' : 'warning' }}">

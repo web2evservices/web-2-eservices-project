@@ -9,18 +9,17 @@ use App\Http\Controllers\MunicipalityController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AnalyticsController;
-
-
-use App\Http\Controllers\Office\OfficeDashboardController;
+use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\ServiceRequestController;
+use App\Http\Controllers\Office\AppointmentController;
+use App\Http\Controllers\Office\ServiceRequestController as OfficeServiceRequestController;
 use App\Http\Controllers\Office\ServiceCategoryController;
 use App\Http\Controllers\Office\ServiceController;
+use App\Http\Controllers\Office\OfficeDashboardController;
 use App\Http\Controllers\Office\OfficeProfileController;
 use App\Http\Controllers\Office\QrCodeController;
-/*
-|--------------------------------------------------------------------------
-| Public Routes
-|--------------------------------------------------------------------------
-*/
+use App\Http\Controllers\PaymentController;
+use App\Http\Controllers\PublicServiceController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -47,6 +46,11 @@ Route::post('/reset-password', [ResetPassController::class, 'resetPassword'])
 ->name('password.update');
 
 Route::get('/auth/{provider}/callback', [SocialAuthController::class, 'callback'])->name('oauth.callback');
+
+// Public Services Routes
+Route::get('/services', [PublicServiceController::class, 'index'])->name('services.index');
+Route::get('/services/{id}', [PublicServiceController::class, 'show'])->name('services.show');
+Route::get('/api/services/{id}', [PublicServiceController::class, 'apiShow'])->name('api.services.show');
 Route::get('/auth/{provider}/redirect', [SocialAuthController::class, 'redirect'])->name('oauth.redirect');
 
 Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
@@ -69,6 +73,47 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])
         ->name('user.dashboard');
+
+    Route::get('/user/requests', [ServiceRequestController::class, 'pageIndex'])
+        ->name('user.requests.index');
+
+    Route::get('/user/requests/create', [ServiceRequestController::class, 'pageCreate'])
+        ->name('user.requests.create');
+
+    Route::get('/user/requests/{id}', [ServiceRequestController::class, 'pageShow'])
+        ->name('user.requests.show');
+
+    Route::get('/user/requests/data', [ServiceRequestController::class, 'index'])
+        ->name('user.requests.data');
+
+    Route::get('/user/requests/{id}/data', [ServiceRequestController::class, 'show'])
+        ->name('user.requests.data.show');
+
+    Route::post('/user/requests', [ServiceRequestController::class, 'store'])
+        ->name('user.requests.store');
+
+    Route::post('/user/requests/{id}/documents', [DocumentController::class, 'store'])
+        ->name('user.requests.documents.store');
+
+    Route::get('/user/requests/{id}/payment', [PaymentController::class, 'create'])->name('user.requests.payment.create');
+    Route::post('/user/requests/{id}/payment', [PaymentController::class, 'store'])->name('user.requests.payment.store');
+    Route::get('/user/requests/{id}/payment/receipt', [PaymentController::class, 'show'])->name('user.requests.payment.show');
+
+    Route::post('/user/requests/{id}/pdf', [ServiceRequestController::class, 'generatePdf'])
+        ->name('user.requests.pdf');
+
+    Route::get('/user/requests/{requestId}/documents/{documentId}/download', function ($requestId, $documentId) {
+        $request = \App\Models\ServiceRequests::where('id', $requestId)
+            ->where('citizen_id', Auth::id() ?? 1)
+            ->firstOrFail();
+
+        $document = \App\Models\Documents::where('id', $documentId)
+            ->where('service_request_id', $request->id)
+            ->firstOrFail();
+
+        $filePath = storage_path('app/public/' . $document->file_path);
+        return response()->download($filePath);
+    })->name('user.requests.documents.download');
 });
 
 
@@ -106,6 +151,19 @@ Route::prefix('office')->middleware(['auth', 'office'])->name('office.')->group(
     // QR Codes
     Route::get('/qr/{requestId}',          [QrCodeController::class, 'show'])->name('qr.show');
     Route::get('/qr/{requestId}/download', [QrCodeController::class, 'download'])->name('qr.download');
+
+    Route::post('/requests/{id}/summary', [OfficeServiceRequestController::class, 'generateSummary'])
+        ->name('requests.generate-summary');
+
+    // Service Requests Management
+    Route::get('/requests', [OfficeServiceRequestController::class, 'index'])->name('requests.index');
+    Route::get('/requests/{id}', [OfficeServiceRequestController::class, 'show'])->name('requests.show');
+    Route::patch('/requests/{id}/status', [OfficeServiceRequestController::class, 'updateStatus'])->name('requests.update-status');
+    Route::post('/requests/{id}/documents', [OfficeServiceRequestController::class, 'uploadDocument'])->name('requests.upload-document');
+    Route::get('/requests/{requestId}/documents/{documentId}/download', [OfficeServiceRequestController::class, 'downloadDocument'])->name('requests.download-document');
+
+    // Appointments Management
+    Route::resource('appointments', AppointmentController::class)->names('appointments');
 });
 
 // Public QR tracking page — no login required

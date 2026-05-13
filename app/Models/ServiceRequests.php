@@ -6,7 +6,15 @@ use Illuminate\Database\Eloquent\Model;
 
 class ServiceRequests extends Model
 {
-        public function citizen() {
+    protected $fillable = [
+        'citizen_id',
+        'service_id',
+        'status',
+        'qr_code',
+        'appointment_id',
+    ];
+
+    public function citizen() {
         return $this->belongsTo(Users::class, 'citizen_id');
     }
 
@@ -23,11 +31,15 @@ class ServiceRequests extends Model
     }
 
     public function documents() {
-        return $this->hasMany(Documents::class);
+        return $this->hasMany(Documents::class, 'service_request_id');
+    }
+
+    public function requestHistories() {
+        return $this->hasMany(RequestHistories::class, 'service_request_id');
     }
 
     public function feedbacks() {
-        return $this->hasMany(Feddback::class);
+        return $this->hasMany(Feddback::class, 'service_request_id');
     }
 
     public function messages() {

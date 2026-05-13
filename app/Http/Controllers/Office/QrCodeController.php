@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Office;
 
 use App\Http\Controllers\Controller;
+use App\Models\Government_Offices;
 use App\Models\ServiceRequests;
 use SimpleSoftwareIO\QrCode\Facades\QrCode;
 use Illuminate\Support\Facades\Auth;
@@ -11,11 +12,11 @@ class QrCodeController extends Controller
 {
     public function show($requestId)
     {
+        $office = Government_Offices::where('user_id', Auth::id())->firstOrFail();
         $serviceRequest = ServiceRequests::with(['service', 'citizen'])->findOrFail($requestId);
 
         // Security: only this office's requests
-        $office = Auth::user()->governmentOffice;
-        if ($serviceRequest->service->office_id !== $office->id) {
+        if (!$serviceRequest->service || $serviceRequest->service->office_id !== $office->id) {
             abort(403);
         }
 
@@ -29,18 +30,18 @@ class QrCodeController extends Controller
 
     public function download($requestId)
     {
-        $serviceRequest = ServiceRequests::findOrFail($requestId);
+        $office = Government_Offices::where('user_id', Auth::id())->firstOrFail();
+        $serviceRequest = ServiceRequests::with('service')->findOrFail($requestId);
 
-        $office = Auth::user()->governmentOffice;
-        if ($serviceRequest->service->office_id !== $office->id) {
+        if (!$serviceRequest->service || $serviceRequest->service->office_id !== $office->id) {
             abort(403);
         }
 
         $trackingUrl = route('requests.track', $serviceRequest->qr_code);
-        $qrPng = QrCode::format('png')->size(300)->generate($trackingUrl);
+        $qrSvg = QrCode::format('svg')->size(300)->generate($trackingUrl);
 
-        return response($qrPng, 200)
-            ->header('Content-Type', 'image/png')
-            ->header('Content-Disposition', 'attachment; filename="request-' . $serviceRequest->qr_code . '.png"');
+        return response($qrSvg, 200)
+            ->header('Content-Type', 'image/svg+xml')
+            ->header('Content-Disposition', 'attachment; filename="request-' . $serviceRequest->qr_code . '.svg"');
     }
 }

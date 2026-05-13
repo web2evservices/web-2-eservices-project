@@ -58,7 +58,7 @@
 
 <nav class="navbar navbar-dark px-3">
     <a class="navbar-brand fw-bold" href="/admin/dashboard">
-        ⚙️ Admin Panel
+        Admin Panel
     </a>
 </nav>
 
@@ -69,27 +69,27 @@
 
             <a href="/admin/dashboard"
                class="{{ request()->is('admin/dashboard') ? 'active' : '' }}">
-                📊 Dashboard
+                Dashboard
             </a>
 
             <a href="/admin/municipalities"
                class="{{ request()->is('admin/municipalities') ? 'active' : '' }}">
-                🏙 Municipalities
+                Municipalities
             </a>
 
             <a href="/admin/offices"
                class="{{ request()->is('admin/offices') ? 'active' : '' }}">
-                🏢 Offices
+                Offices
             </a>
 
             <a href="/admin/users"
                class="{{ request()->is('admin/users') ? 'active' : '' }}">
-                👤 Users
+                Users
             </a>
 
             <a href="/admin/analytics"
                class="{{ request()->is('admin/analytics') ? 'active' : '' }}">
-                📈 Analytics
+                Analytics
             </a>
 
             <form method="POST" action="{{ route('logout') }}">

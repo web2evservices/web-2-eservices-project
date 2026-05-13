@@ -44,6 +44,18 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('office.requests.*') ? 'active' : '' }}"
+                   href="{{ route('office.requests.index') }}">
+                    <i class="bi bi-inbox"></i> Requests
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('office.appointments.*') ? 'active' : '' }}"
+                   href="{{ route('office.appointments.index') }}">
+                    <i class="bi bi-calendar-check"></i> Appointments
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('office.profile.*') ? 'active' : '' }}"
                    href="{{ route('office.profile.edit') }}">
                     <i class="bi bi-building-gear"></i> Office Profile

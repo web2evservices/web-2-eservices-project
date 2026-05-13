@@ -20,23 +20,16 @@ class ServiceCategoryController extends Controller
     }
 
     public function store(Request $request)
-    {
-        $request->validate([
-            'name'        => 'required|string|max:255|unique:service__categories,name',
-            'description' => 'nullable|string',
-        ]);
-
-        ServiceCategory::create($request->only('name', 'description'));
-
-        return redirect()->route('office.categories.index')
-            ->with('success', 'Category created successfully.');
-    }
-
-    
-public function edit($id)
 {
-    $category = ServiceCategory::findOrFail($id);
-    return view('office.categories.edit', compact('category'));
+    $request->validate([
+        'name'        => 'required|string|max:255|unique:service_categories,name',
+        'description' => 'nullable|string',
+    ]);
+
+    ServiceCategory::create($request->only('name', 'description'));
+
+    return redirect()->route('office.categories.index')
+        ->with('success', 'Category created successfully.');
 }
 
 public function update(Request $request, $id)
@@ -44,7 +37,7 @@ public function update(Request $request, $id)
     $category = ServiceCategory::findOrFail($id);
 
     $request->validate([
-        'name'        => 'required|string|max:255|unique:service__categories,name,' . $id,
+        'name'        => 'required|string|max:255|unique:service_categories,name,' . $id,
         'description' => 'nullable|string',
     ]);
 
@@ -52,6 +45,12 @@ public function update(Request $request, $id)
 
     return redirect()->route('office.categories.index')
         ->with('success', 'Category updated successfully.');
+}
+    
+public function edit($id)
+{
+    $category = ServiceCategory::findOrFail($id);
+    return view('office.categories.edit', compact('category'));
 }
 
 public function destroy($id)
