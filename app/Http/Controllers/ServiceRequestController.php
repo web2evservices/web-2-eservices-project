@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\ServiceRequestCreated;
 use App\Models\Documents;
 use App\Models\RequestHistories;
 use App\Models\ServiceRequests;
@@ -93,6 +94,9 @@ class ServiceRequestController extends Controller
             'qr_code'        => (string) Str::uuid(),
             'appointment_id' => $validated['appointment_id'] ?? null,
         ]);
+
+        // Dispatch event to notify office
+        ServiceRequestCreated::dispatch($serviceRequest);
 
         // Handle document uploads
         if ($request->hasFile('documents')) {

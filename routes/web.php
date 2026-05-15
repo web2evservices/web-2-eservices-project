@@ -114,6 +114,24 @@ Route::middleware(['auth'])->group(function () {
         $filePath = storage_path('app/public/' . $document->file_path);
         return response()->download($filePath);
     })->name('user.requests.documents.download');
+
+    // Feedback Routes
+    Route::post('/requests/{serviceRequestId}/feedback', [\App\Http\Controllers\FeedbackController::class, 'store'])
+        ->name('requests.feedback.store');
+    Route::get('/requests/{serviceRequestId}/feedback', [\App\Http\Controllers\FeedbackController::class, 'show'])
+        ->name('requests.feedback.show');
+
+    // Messages Routes
+    Route::get('/messages', [\App\Http\Controllers\MessagesController::class, 'index'])
+        ->name('messages.index');
+    Route::post('/messages', [\App\Http\Controllers\MessagesController::class, 'store'])
+        ->name('messages.store');
+    Route::get('/messages/{id}', [\App\Http\Controllers\MessagesController::class, 'show'])
+        ->name('messages.show');
+    Route::delete('/messages/{id}', [\App\Http\Controllers\MessagesController::class, 'destroy'])
+        ->name('messages.destroy');
+    Route::get('/messages/{messageId}/attachment', [\App\Http\Controllers\MessagesController::class, 'downloadAttachment'])
+        ->name('messages.attachment.download');
 });
 
 
