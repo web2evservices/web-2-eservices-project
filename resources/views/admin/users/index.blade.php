@@ -31,6 +31,7 @@
         @endif
     </td>
     <td>
+    @if ($u->role != 'admin')
     <form method="POST" action="/admin/users/{{ $u->id }}/toggle" class="d-inline">
         @csrf
         @method('PATCH')
@@ -66,6 +67,7 @@
                 Delete
             </button>
 </form>
+@endif
 </td>
 </tr>
 @endforeach
