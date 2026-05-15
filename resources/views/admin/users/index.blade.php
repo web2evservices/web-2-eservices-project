@@ -50,11 +50,7 @@
 
         <option value="office_user" {{ $u->role == 'office_user' ? 'selected' : '' }}>
             Office User
-        </option>
-
-        <option value="admin" {{ $u->role == 'admin' ? 'selected' : '' }}>
-            Admin
-        </option>
+</option>
     </select>
     <button class="btn btn-primary btn-sm">
         Update Role
