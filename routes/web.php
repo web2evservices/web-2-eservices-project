@@ -12,6 +12,7 @@ use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\Office\AppointmentController;
+use App\Http\Controllers\Office\NotificationController;
 use App\Http\Controllers\Office\ServiceRequestController as OfficeServiceRequestController;
 use App\Http\Controllers\Office\ServiceCategoryController;
 use App\Http\Controllers\Office\ServiceController;
@@ -181,7 +182,14 @@ Route::prefix('office')->middleware(['auth', 'office'])->name('office.')->group(
     Route::get('/requests/{requestId}/documents/{documentId}/download', [OfficeServiceRequestController::class, 'downloadDocument'])->name('requests.download-document');
 
     // Appointments Management
+// Appointments Management
     Route::resource('appointments', AppointmentController::class)->names('appointments');
+
+    // Notifications
+    Route::get('/notifications',                [NotificationController::class, 'index'])       ->name('notifications.index');
+    Route::get('/notifications/count',          [NotificationController::class, 'unreadCount']) ->name('notifications.count');
+    Route::patch('/notifications/mark-all-read',[NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::patch('/notifications/{id}/read',    [NotificationController::class, 'markRead'])    ->name('notifications.mark-read');
 });
 
 // Public QR tracking page — no login required

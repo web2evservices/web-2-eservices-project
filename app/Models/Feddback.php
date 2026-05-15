@@ -6,6 +6,13 @@ use Illuminate\Database\Eloquent\Model;
 
 class Feddback extends Model
 {
+    protected $fillable = [
+    'service_request_id',
+    'citizen_id',
+    'rating',
+    'comment',
+    'response',
+];
     public function serviceRequest() {
         return $this->belongsTo(ServiceRequests::class);
     }

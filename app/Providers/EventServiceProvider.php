@@ -3,52 +3,50 @@
 namespace App\Providers;
 
 use Illuminate\Foundation\Support\Providers\EventServiceProvider as ServiceProvider;
+
 use App\Events\ServiceRequestCreated;
+use App\Events\RequestStatusUpdated;
 use App\Events\FeedbackReceived;
 use App\Events\ChatMessageReceived;
 use App\Events\AppointmentReminderTriggered;
-use App\Events\RequestStatusUpdated;
+
 use App\Listeners\SendServiceRequestNotification;
+use App\Listeners\SendRequestStatusNotification;
 use App\Listeners\SendFeedbackNotification;
 use App\Listeners\SendChatMessageNotification;
 use App\Listeners\SendAppointmentReminderNotification;
 
 class EventServiceProvider extends ServiceProvider
 {
-    /**
-     * The event to listener mappings for the application.
-     *
-     * @var array<class-string, array<int, class-string>>
-     */
     protected $listen = [
+        // Task 1 — new request from citizen
         ServiceRequestCreated::class => [
             SendServiceRequestNotification::class,
         ],
+
+        // Task 1 — status update on a request
+        RequestStatusUpdated::class => [
+            SendRequestStatusNotification::class,
+        ],
+
+        // Task 2 — feedback from citizen
         FeedbackReceived::class => [
             SendFeedbackNotification::class,
         ],
+
+        // Task 2 — chat message from citizen
         ChatMessageReceived::class => [
             SendChatMessageNotification::class,
         ],
+
+        // Task 3 — 24-hour appointment reminder
         AppointmentReminderTriggered::class => [
             SendAppointmentReminderNotification::class,
         ],
-        RequestStatusUpdated::class => [
-            // Additional listeners can be added here
-        ],
     ];
 
-    /**
-     * Register any events for your application.
-     */
-    public function boot(): void
-    {
-        //
-    }
+    public function boot(): void {}
 
-    /**
-     * Determine if events and listeners should be automatically discovered.
-     */
     public function shouldDiscoverEvents(): bool
     {
         return false;
