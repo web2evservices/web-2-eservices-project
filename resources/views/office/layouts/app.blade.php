@@ -8,12 +8,18 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <style>
-        .sidebar { min-height: 100vh; background: #1e3a5f; }
+        body { margin: 0; overflow-x: hidden; }
+        .sidebar {
+            position: fixed; top: 0; left: 0; z-index: 1030;
+            width: 240px; height: 100vh; overflow-y: auto;
+            background: #1e3a5f;
+        }
         .sidebar .nav-link { color: #adb5bd; padding: 10px 20px; }
         .sidebar .nav-link:hover, .sidebar .nav-link.active { color: #fff; background: rgba(255,255,255,0.1); border-radius: 6px; }
         .sidebar .nav-link i { margin-right: 8px; }
         .sidebar-brand { color: #fff; font-weight: 700; font-size: 1.1rem; padding: 20px; display: block; border-bottom: 1px solid rgba(255,255,255,0.1); }
-        .main-content { background: #f8f9fa; min-height: 100vh; }
+        .app-wrapper { margin-left: 240px; min-height: 100vh; display: flex; flex-direction: column; }
+        .main-content { background: #f8f9fa; flex: 1; }
         .top-navbar { background: #1e3a5f; }
         /* Notification Bell */
 #notif-bell-btn {
@@ -70,9 +76,7 @@
 </head>
 <body>
 
-<div class="d-flex">
-    {{-- Sidebar --}}
-    <nav class="sidebar d-flex flex-column" style="width: 240px; flex-shrink: 0;">
+<nav class="sidebar d-flex flex-column">
         <a class="sidebar-brand" href="{{ route('office.dashboard') }}">
             <i class="bi bi-building-fill"></i> Office Portal
         </a>
@@ -143,8 +147,7 @@
         </div>
     </nav>
 
-    {{-- Main Content --}}
-    <div class="flex-grow-1 d-flex flex-column" style="min-width:0;">
+<div class="app-wrapper">
 
     {{-- Top bar with notification bell --}}
     <div class="office-topbar">
@@ -172,7 +175,7 @@
         </div>
     </div>
 
-    <div class="main-content p-4 flex-grow-1">
+    <div class="main-content p-4">
         @if(session('success'))
             <div class="alert alert-success alert-dismissible fade show">
                 <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
@@ -190,7 +193,6 @@
         @endif
         @yield('content')
     </div>
-</div>
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>

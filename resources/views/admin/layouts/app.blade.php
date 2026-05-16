@@ -8,17 +8,31 @@
 
     <style>
         body {
+            margin: 0;
+            overflow-x: hidden;
             background: #f4f6f9;
         }
 
         .navbar {
             background: #111827 !important;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            z-index: 1040;
+            height: 56px;
         }
 
         .sidebar {
-            min-height: 100vh;
+            position: fixed;
+            top: 56px;
+            left: 0;
+            z-index: 1030;
+            width: 240px;
+            height: calc(100vh - 56px);
+            overflow-y: auto;
             background: #1f2937;
-            padding-top: 20px;
+            padding: 20px 12px;
         }
 
         .sidebar a {
@@ -42,7 +56,10 @@
             color: white !important;
         }
 
-        .content {
+        .admin-main {
+            margin-left: 240px;
+            margin-top: 56px;
+            min-height: calc(100vh - 56px);
             padding: 25px;
         }
 
@@ -62,51 +79,45 @@
     </a>
 </nav>
 
-<div class="container-fluid">
-    <div class="row">
+<aside class="sidebar">
 
-        <div class="col-md-2 sidebar">
+    <a href="/admin/dashboard"
+       class="{{ request()->is('admin/dashboard') ? 'active' : '' }}">
+        Dashboard
+    </a>
 
-            <a href="/admin/dashboard"
-               class="{{ request()->is('admin/dashboard') ? 'active' : '' }}">
-                Dashboard
-            </a>
+    <a href="/admin/municipalities"
+       class="{{ request()->is('admin/municipalities') ? 'active' : '' }}">
+        Municipalities
+    </a>
 
-            <a href="/admin/municipalities"
-               class="{{ request()->is('admin/municipalities') ? 'active' : '' }}">
-                Municipalities
-            </a>
+    <a href="/admin/offices"
+       class="{{ request()->is('admin/offices') ? 'active' : '' }}">
+        Offices
+    </a>
 
-            <a href="/admin/offices"
-               class="{{ request()->is('admin/offices') ? 'active' : '' }}">
-                Offices
-            </a>
+    <a href="/admin/users"
+       class="{{ request()->is('admin/users') ? 'active' : '' }}">
+        Users
+    </a>
 
-            <a href="/admin/users"
-               class="{{ request()->is('admin/users') ? 'active' : '' }}">
-                Users
-            </a>
+    <a href="/admin/analytics"
+       class="{{ request()->is('admin/analytics') ? 'active' : '' }}">
+        Analytics
+    </a>
 
-            <a href="/admin/analytics"
-               class="{{ request()->is('admin/analytics') ? 'active' : '' }}">
-                Analytics
-            </a>
+    <form method="POST" action="{{ route('logout') }}">
+        @csrf
+        <button type="submit" class="btn btn-danger logout-btn">
+            Logout
+        </button>
+    </form>
 
-            <form method="POST" action="{{ route('logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-danger logout-btn">
-                    Logout
-                </button>
-            </form>
+</aside>
 
-        </div>
-
-        <div class="col-md-10 content">
-            @yield('content')
-        </div>
-
-    </div>
-</div>
+<main class="admin-main">
+    @yield('content')
+</main>
 
 </body>
 </html>

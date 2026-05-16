@@ -26,7 +26,7 @@ class NotificationController extends Controller
             ]);
         }
 
-        return view('user.notifications.index', compact('notifications', 'unreadCount'));
+        return view('users.notifications.index', compact('notifications', 'unreadCount'));
     }
 
     public function markRead($id)
