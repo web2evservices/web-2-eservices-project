@@ -182,6 +182,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
 @yield('scripts')
 <script>
 (function () {
@@ -282,6 +283,34 @@
             list.querySelectorAll('.notif-item.unread').forEach(el => el.classList.remove('unread'));
             updateBadge(0);
         });
+    });
+
+    // --- PUSHER REAL-TIME INTEGRATION ---
+    const pusher = new Pusher('{{ env("PUSHER_APP_KEY") }}', {
+        cluster: '{{ env("PUSHER_APP_CLUSTER") }}',
+        encrypted: true
+    });
+
+    const channel = pusher.subscribe(`user.{{ Auth::id() }}`);
+    
+    channel.bind('notification.created', function(data) {
+        // Add new notification to the top of the list
+        const newNotif = {
+            id: data.id,
+            title: data.title,
+            message: data.message,
+            type: data.type,
+            is_read: false,
+            created_at: data.created_at
+        };
+        
+        const existingList = list.querySelector('.notif-empty');
+        if (existingList) {
+            list.innerHTML = '';
+        }
+        
+        list.insertBefore(renderItem(newNotif), list.firstChild);
+        fetchCount();
     });
 
     fetchCount();

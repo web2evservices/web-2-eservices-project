@@ -133,6 +133,12 @@ Route::middleware(['auth'])->group(function () {
         ->name('messages.destroy');
     Route::get('/messages/{messageId}/attachment', [\App\Http\Controllers\MessagesController::class, 'downloadAttachment'])
         ->name('messages.attachment.download');
+
+    // User/Citizen Notifications
+    Route::get('/user/notifications',                [\App\Http\Controllers\User\NotificationController::class, 'index'])       ->name('user.notifications.index');
+    Route::get('/user/notifications/count',          [\App\Http\Controllers\User\NotificationController::class, 'unreadCount']) ->name('user.notifications.count');
+    Route::patch('/user/notifications/mark-all-read',[\App\Http\Controllers\User\NotificationController::class, 'markAllRead'])->name('user.notifications.mark-all-read');
+    Route::patch('/user/notifications/{id}/read',    [\App\Http\Controllers\User\NotificationController::class, 'markRead'])    ->name('user.notifications.mark-read');
 });
 
 

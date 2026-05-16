@@ -3,9 +3,11 @@
 namespace App\Listeners;
 
 use App\Events\FeedbackReceived;
+use App\Events\NotificationBroadcast;
 use App\Mail\FeedbackReceivedMail;
 use App\Models\Notification;
 use App\Services\Contracts\SmsServiceInterface;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 
 class SendFeedbackNotification
@@ -30,13 +32,14 @@ class SendFeedbackNotification
         $officeEmail = $office->email;
 
         // Create notification record
-        Notification::create([
+        $notification = Notification::create([
             'user_id' => $officeUser->id,
             'title' => 'New Feedback Received',
             'message' => "Feedback received from {$citizen->username}: Rating {$feedback->rating}/5",
             'type' => 'feedback',
             'is_read' => false,
         ]);
+        NotificationBroadcast::dispatch($notification, $officeUser->id);
 
         // Send email to office
         try {
@@ -48,11 +51,15 @@ class SendFeedbackNotification
         }
 
         // Send SMS to office
-        $smsMessage = "New feedback received from {$citizen->username}! Rating: {$feedback->rating}/5. Request ID: {$request->id}";
-        try {
-            $this->smsService->send($officePhone, $smsMessage);
-        } catch (\Exception $e) {
-            \Log::error('Failed to send SMS: ' . $e->getMessage());
+        if ($officePhone) {
+            $smsMessage = "New feedback received from {$citizen->username}! Rating: {$feedback->rating}/5. Request ID: {$request->id}";
+            try {
+                $this->smsService->send($officePhone, $smsMessage);
+            } catch (\Exception $e) {
+                \Log::error('Failed to send SMS: ' . $e->getMessage());
+            }
+        } else {
+            \Log::warning('Office phone number is missing, SMS not sent for feedback on request ' . $request->id);
         }
     }
 }
