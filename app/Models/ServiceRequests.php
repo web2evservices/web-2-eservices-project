@@ -27,7 +27,7 @@ class ServiceRequests extends Model
     }
 
     public function payment() {
-        return $this->hasOne(Payments::class);
+        return $this->hasOne(Payments::class, 'service_request_id');
     }
 
     public function documents() {

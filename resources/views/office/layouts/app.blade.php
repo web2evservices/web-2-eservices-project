@@ -56,6 +56,18 @@
                 </a>
             </li>
             <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('office.chat.*') ? 'active' : '' }}"
+                   href="{{ route('office.chat.index') }}">
+                    <i class="bi bi-chat-dots"></i> Messages
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ request()->routeIs('office.feedback.*') ? 'active' : '' }}"
+                   href="{{ route('office.feedback.index') }}">
+                    <i class="bi bi-star"></i> Feedback
+                </a>
+            </li>
+            <li class="nav-item">
                 <a class="nav-link {{ request()->routeIs('office.profile.*') ? 'active' : '' }}"
                    href="{{ route('office.profile.edit') }}">
                     <i class="bi bi-building-gear"></i> Office Profile

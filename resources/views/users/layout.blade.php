@@ -45,6 +45,18 @@
                         <i class="bi bi-inbox"></i> My Requests
                     </a>
                 </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('user.appointments.*') ? 'active' : '' }}"
+                       href="{{ route('user.appointments.index') }}">
+                        <i class="bi bi-calendar-event"></i> Appointments
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {{ request()->routeIs('user.chat.*') ? 'active' : '' }}"
+                       href="{{ route('user.chat.index') }}">
+                        <i class="bi bi-chat-dots"></i> Messages
+                    </a>
+                </li>
             @endauth
         </ul>
         <div class="p-3 border-top border-secondary">

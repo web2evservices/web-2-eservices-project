@@ -20,6 +20,10 @@ use App\Http\Controllers\Office\OfficeProfileController;
 use App\Http\Controllers\Office\QrCodeController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicServiceController;
+use App\Http\Controllers\ChatController;
+use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\CitizenAppointmentController;
+use App\Http\Controllers\OfficeDiscoveryController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -173,3 +177,56 @@ Route::get('/track/{qrCode}', function ($qrCode) {
         ->firstOrFail();
     return view('office.public.track', compact('request'));
 })->name('requests.track');
+
+//        Person5         //
+// ── Public ────────────────────────────────────────────────────────────────
+Route::get('/offices/map', [OfficeDiscoveryController::class, 'index'])->name('offices.map');
+Route::get('/api/offices', [OfficeDiscoveryController::class, 'apiOffices'])->name('api.offices');
+
+// ── Webhooks (no CSRF) ────────────────────────────────────────────────────
+Route::post('/webhooks/tap',         [PaymentController::class, 'tapWebhook'])->name('payments.tap.webhook');
+Route::post('/webhooks/nowpayments', [PaymentController::class, 'nowPaymentsWebhook'])->name('payments.nowpayments.webhook');
+
+// ── Authenticated citizens ────────────────────────────────────────────────
+Route::middleware(['auth'])->group(function () {
+
+    // Payments
+    Route::get('/user/requests/{id}/payment',         [PaymentController::class, 'create'])->name('user.requests.payment.create');
+    Route::get('/user/requests/{id}/payment/receipt', [PaymentController::class, 'show'])->name('user.requests.payment.show');
+    Route::get('/payments/{id}/crypto/estimate',      [PaymentController::class, 'cryptoEstimate'])->name('payments.crypto.estimate');
+
+    // TEST mode (Stripe)
+    Route::post('/payments/{id}/stripe/confirm',      [PaymentController::class, 'confirmStripe'])->name('payments.stripe.confirm');
+
+    // LIVE mode (Tap)
+    Route::post('/payments/{id}/tap/initiate',        [PaymentController::class, 'initiateTap'])->name('payments.tap.initiate');
+    Route::get('/payments/{id}/tap/callback',         [PaymentController::class, 'tapCallback'])->name('payments.tap.callback');
+
+    // Crypto (both modes)
+    Route::post('/payments/{id}/crypto/initiate',     [PaymentController::class, 'initiateCrypto'])->name('payments.nowpayments.initiate');
+    Route::get('/payments/{id}/crypto/success',       [PaymentController::class, 'nowPaymentsSuccess'])->name('payments.nowpayments.success');
+
+    // Chat
+    Route::get('/chat',              [ChatController::class, 'index'])->name('user.chat.index');
+    Route::get('/chat/{userId}',     [ChatController::class, 'show'])->name('user.chat.show');
+    Route::post('/chat/send',        [ChatController::class, 'send'])->name('chat.send');
+
+    // Feedback
+    Route::post('/user/requests/{id}/feedback', [FeedbackController::class, 'store'])->name('user.feedback.store');
+
+    // Citizen Appointments
+    Route::prefix('user/appointments')->name('user.appointments.')->group(function () {
+        Route::get('/',         [CitizenAppointmentController::class, 'index'])->name('index');
+        Route::get('/create',   [CitizenAppointmentController::class, 'create'])->name('create');
+        Route::post('/',        [CitizenAppointmentController::class, 'store'])->name('store');
+        Route::delete('/{id}',  [CitizenAppointmentController::class, 'destroy'])->name('destroy');
+    });
+});
+
+// ── Office staff ──────────────────────────────────────────────────────────
+Route::middleware(['auth', 'office'])->prefix('office')->name('office.')->group(function () {
+    Route::get('/chat',           [ChatController::class, 'officeIndex'])->name('chat.index');
+    Route::get('/chat/{userId}',  [ChatController::class, 'officeShow'])->name('chat.show');
+    Route::get('/feedback',       [FeedbackController::class, 'officeIndex'])->name('feedback.index');
+    Route::post('/feedback/{id}/respond', [FeedbackController::class, 'respond'])->name('feedback.respond');
+});

@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+    $middleware->validateCsrfTokens(except: [
+        'webhooks/tap',
+        'webhooks/nowpayments',
+    ]);
      $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
             'office' => \App\Http\Middleware\OfficeMiddleware::class,
