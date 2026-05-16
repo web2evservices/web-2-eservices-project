@@ -18,7 +18,9 @@ class Appointments extends Model
         'status',
         'notes',
     ];
-
+    protected $casts = [
+    'date' => 'datetime',
+];
     public function office() {
         return $this->belongsTo(Government_Offices::class, 'office_id');
     }

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Office;
 
+use App\Events\RequestStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\ServiceRequests;
 use App\Models\Documents;
@@ -77,6 +78,9 @@ class ServiceRequestController extends Controller
 
         $serviceRequest->status = $newStatus;
         $serviceRequest->save();
+
+        // Dispatch event for request update notification
+        RequestStatusUpdated::dispatch($serviceRequest, $oldStatus, $newStatus);
 
         // Log status change
         \App\Models\RequestHistories::create([
