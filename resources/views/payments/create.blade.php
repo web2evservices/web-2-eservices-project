@@ -6,7 +6,7 @@
 <div class="d-flex justify-content-between align-items-center mb-4">
     <div>
         <h3 class="mb-1"><i class="bi bi-credit-card me-2 text-primary"></i>Payment for request #{{ $request->id }}</h3>
-        <p class="text-muted mb-0">Pay by card or cryptocurrency (simulated).</p>
+        <p class="text-muted mb-0">Choose card or cryptocurrency to complete your payment.</p>
     </div>
     <a href="{{ route('user.requests.show', $request->id) }}" class="btn btn-outline-secondary btn-sm">Back to request</a>
 </div>
@@ -52,23 +52,6 @@
                         </div>
                     </div>
 
-                    <div id="cardFields" class="d-none">
-                        <div class="mb-3">
-                            <label for="card_number" class="form-label">Card number <span class="text-danger">*</span></label>
-                            <input type="text" id="card_number" name="card_number" class="form-control" placeholder="1234 5678 9012 3456">
-                        </div>
-                        <div class="row g-2">
-                            <div class="col-md-6 mb-3">
-                                <label for="expiry_date" class="form-label">Expiry (MM/YY)</label>
-                                <input type="text" id="expiry_date" name="expiry_date" class="form-control" placeholder="12/26">
-                            </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="cvv" class="form-label">CVV</label>
-                                <input type="text" id="cvv" name="cvv" class="form-control" placeholder="123">
-                            </div>
-                        </div>
-                    </div>
-
                     <div id="cryptoFields" class="d-none">
                         <div class="mb-3">
                             <label for="crypto_type" class="form-label">Cryptocurrency</label>
@@ -79,16 +62,13 @@
                                 <option value="USDT">Tether (USDT)</option>
                             </select>
                         </div>
-                        <div class="mb-3">
-                            <label for="crypto_wallet" class="form-label">Wallet address</label>
-                            <input type="text" id="crypto_wallet" name="crypto_wallet" class="form-control" placeholder="Your wallet address">
-                        </div>
                     </div>
 
                     <div class="mb-4">
-                        <label for="amount" class="form-label">Amount <span class="text-danger">*</span></label>
-                        <input type="number" id="amount" name="amount" step="0.01" class="form-control" required
+                        <label for="amount" class="form-label">Amount</label>
+                        <input type="number" id="amount" name="amount" step="0.01" class="form-control" readonly
                                value="{{ $request->service->price ?? 0 }}">
+                        <div class="form-text">Amount is set by the service price and cannot be changed here.</div>
                     </div>
 
                     <button type="submit" id="payButton" class="btn btn-primary">
@@ -104,7 +84,6 @@
 @push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const cardFields = document.getElementById('cardFields');
     const cryptoFields = document.getElementById('cryptoFields');
     const paymentMethodRadios = document.querySelectorAll('input[name="payment_method"]');
     const form = document.getElementById('paymentForm');
@@ -113,16 +92,10 @@ document.addEventListener('DOMContentLoaded', function() {
     paymentMethodRadios.forEach(radio => {
         radio.addEventListener('change', function() {
             if (this.value === 'card') {
-                cardFields.classList.remove('d-none');
                 cryptoFields.classList.add('d-none');
                 document.getElementById('crypto_type').value = '';
-                document.getElementById('crypto_wallet').value = '';
             } else if (this.value === 'crypto') {
                 cryptoFields.classList.remove('d-none');
-                cardFields.classList.add('d-none');
-                document.getElementById('card_number').value = '';
-                document.getElementById('expiry_date').value = '';
-                document.getElementById('cvv').value = '';
             }
         });
     });
@@ -147,10 +120,10 @@ document.addEventListener('DOMContentLoaded', function() {
                 alert(data.error);
                 payButton.disabled = false;
                 payButton.innerHTML = '<i class="bi bi-lock-fill me-1"></i> Process payment';
-            } else {
-                alert('Payment processed successfully!');
-                window.location.href = `/user/requests/{{ $request->id }}/payment/receipt`;
+                return;
             }
+
+            window.location.href = data.url;
         })
         .catch(() => {
             alert('An error occurred. Please try again.');

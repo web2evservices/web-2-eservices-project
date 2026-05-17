@@ -43,6 +43,15 @@ return [
     'client_id'     => env('GITHUB_CLIENT_ID'),
     'client_secret' => env('GITHUB_CLIENT_SECRET'),
     'redirect'      => env('GITHUB_REDIRECT_URI'),
+],
+'stripe' => [
+    'key' => env('STRIPE_KEY'),
+    'secret' => env('STRIPE_SECRET'),
+    'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
+],
+'coinbase' => [
+    'api_key' => env('COINBASE_COMMERCE_API_KEY'),
+    'webhook_secret' => env('COINBASE_COMMERCE_WEBHOOK_SECRET'),
 ]
 
 ];

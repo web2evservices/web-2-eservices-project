@@ -117,6 +117,11 @@ Route::middleware(['auth'])->group(function () {
     })->name('user.requests.documents.download');
 });
 
+Route::post('/payments/stripe/webhook', [PaymentController::class, 'stripeWebhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/payments/coinbase/webhook', [PaymentController::class, 'coinbaseWebhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 
 // =============================================
 // PERSON 3: Government Office Routes
