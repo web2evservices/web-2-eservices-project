@@ -8,7 +8,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
 {
-    protected array $providers = ['google', 'github', 'linkedin-openid', 'facebook'];
+    protected array $providers = ['google', 'github'];
 
     public function redirect(string $provider)
     {
