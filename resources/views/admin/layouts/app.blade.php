@@ -106,6 +106,11 @@
         Analytics
     </a>
 
+    <a href="{{ route('admin.activity') }}"
+       class="{{ request()->is('admin/activity') ? 'active' : '' }}">
+        Activity Monitor
+    </a>
+
     <form method="POST" action="{{ route('logout') }}">
         @csrf
         <button type="submit" class="btn btn-danger logout-btn">

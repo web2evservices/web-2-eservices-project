@@ -9,7 +9,7 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class CitizenRequestStatusMail extends Mailable
+class OfficeRequestStatusMail extends Mailable
 {
     use Queueable, SerializesModels;
 
@@ -22,7 +22,7 @@ class CitizenRequestStatusMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: "Your Request #{$this->serviceRequest->id} Status Has Been Updated",
+            subject: "Request #{$this->serviceRequest->id} Status Updated",
         );
     }
 
@@ -31,10 +31,9 @@ class CitizenRequestStatusMail extends Mailable
         $this->serviceRequest->loadMissing(['service.office', 'citizen']);
 
         return new Content(
-            view: 'emails.request-status-update',
+            view: 'emails.office.request-status-updated',
             with: [
                 'serviceRequest' => $this->serviceRequest,
-                'request'        => $this->serviceRequest,
                 'oldStatus'      => $this->oldStatus,
                 'newStatus'      => $this->newStatus,
             ],

@@ -1,15 +1,20 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Appointments;
 use App\Models\Government_Offices;
 use App\Models\Services;
-use App\Models\Notifications;
+use App\Services\ActivityLogger;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\ValidationException;
 
 class CitizenAppointmentController extends Controller
 {
+    public function __construct(protected NotificationService $notifications) {}
+
     public function index()
     {
         $appointments = Appointments::where('citizen_id', Auth::id())
@@ -25,8 +30,8 @@ class CitizenAppointmentController extends Controller
         $officeId  = $request->query('office_id');
         $serviceId = $request->query('service_id');
 
-        $offices   = Government_Offices::all();
-        $services  = $officeId
+        $offices  = Government_Offices::all();
+        $services = $officeId
             ? Services::where('office_id', $officeId)->get()
             : Services::with('office')->get();
 
@@ -46,27 +51,53 @@ class CitizenAppointmentController extends Controller
             'notes'       => 'nullable|string|max:500',
         ]);
 
+        try {
+            $validated['time_slot'] = Appointments::normalizeTimeSlot($validated['time_slot']);
+        } catch (\InvalidArgumentException) {
+            throw ValidationException::withMessages([
+                'time_slot' => 'Please select a valid time slot.',
+            ]);
+        }
+
         $appointment = Appointments::create([
-            'office_id'    => $validated['office_id'],
-            'service_id'   => $validated['service_id'],
-            'citizen_id'   => Auth::id(),
-            'citizen_name' => Auth::user()->username,
-            'citizen_email'=> Auth::user()->email,
-            'citizen_phone'=> Auth::user()->tel ?? '',
-            'date'         => $validated['date'],
-            'time_slot'    => $validated['time_slot'],
-            'status'       => 'Scheduled',
-            'notes'        => $validated['notes'] ?? null,
+            'office_id'     => $validated['office_id'],
+            'service_id'    => $validated['service_id'],
+            'citizen_id'    => Auth::id(),
+            'citizen_name'  => Auth::user()->username,
+            'citizen_email' => Auth::user()->email,
+            'citizen_phone' => Auth::user()->tel ?? '',
+            'date'          => $validated['date'],
+            'time_slot'     => $validated['time_slot'],
+            'status'        => 'Scheduled',
+            'notes'         => $validated['notes'] ?? null,
         ]);
 
-        // Notify citizen
-        Notifications::create([
-            'user_id' => Auth::id(),
-            'title'   => 'Appointment Scheduled',
-            'message' => 'Your appointment is confirmed for ' . $validated['date'] . ' at ' . $validated['time_slot'],
-            'type'    => 'appointment',
-            'is_read' => false,
-        ]);
+        $when = $validated['date'] . ' at ' . $appointment->formatted_time_slot;
+
+        $this->notifications->notifyCitizenForAppointment(
+            $appointment,
+            'Appointment Scheduled',
+            "Your appointment is confirmed for {$when}.",
+            'appointment_reminder',
+            'Appointment Scheduled',
+            "Your appointment is confirmed for {$when}."
+        );
+
+        $this->notifications->notifyOfficeForAppointment(
+            $appointment,
+            'New Appointment Booked',
+            Auth::user()->username . " booked an appointment for {$when}.",
+            'appointment_reminder',
+            'New Appointment Booked',
+            Auth::user()->username . " booked an appointment for {$when}."
+        );
+
+        ActivityLogger::created(
+            'appointment',
+            $appointment->id,
+            Auth::user()->username . " booked an appointment for {$when}",
+            $appointment->only(['office_id', 'service_id', 'date', 'time_slot', 'status'])
+        );
 
         return redirect()->route('user.appointments.index')
             ->with('success', 'Appointment booked successfully!');
@@ -78,7 +109,35 @@ class CitizenAppointmentController extends Controller
             ->where('citizen_id', Auth::id())
             ->firstOrFail();
 
+        $when = $appointment->date->format('Y-m-d') . ' at ' . $appointment->formatted_time_slot;
+
+        ActivityLogger::updated(
+            'appointment',
+            $appointment->id,
+            Auth::user()->username . " cancelled appointment for {$when}",
+            ['status' => $appointment->status],
+            ['status' => 'Cancelled']
+        );
+
         $appointment->update(['status' => 'Cancelled']);
+
+        $this->notifications->notifyCitizenForAppointment(
+            $appointment,
+            'Appointment Cancelled',
+            "Your appointment scheduled for {$when} has been cancelled.",
+            'appointment_reminder',
+            'Appointment Cancelled',
+            "Your appointment scheduled for {$when} has been cancelled."
+        );
+
+        $this->notifications->notifyOfficeForAppointment(
+            $appointment,
+            'Appointment Cancelled',
+            Auth::user()->username . " cancelled their appointment for {$when}.",
+            'appointment_reminder',
+            'Appointment Cancelled',
+            Auth::user()->username . " cancelled their appointment for {$when}."
+        );
 
         return redirect()->route('user.appointments.index')
             ->with('success', 'Appointment cancelled.');

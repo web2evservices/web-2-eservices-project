@@ -7,6 +7,7 @@ use App\Models\Government_Offices;
 use App\Models\Services;
 use App\Models\ServiceCategory;
 use Illuminate\Http\Request;
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Auth;
 
 class ServiceController extends Controller
@@ -89,7 +90,7 @@ class ServiceController extends Controller
                 ->with('error', 'Please create your office profile before adding services.');
         }
 
-        Services::create([
+        $service = Services::create([
             'office_id'          => $office->id,
             'name'               => $request->name,
             'category_id'        => $request->category_id,
@@ -97,6 +98,13 @@ class ServiceController extends Controller
             'duration'           => $request->duration,
             'required_documents' => $request->required_documents ?? [],
         ]);
+
+        ActivityLogger::created(
+            'service',
+            $service->id,
+            "Created service \"{$service->name}\"",
+            $service->only(['name', 'price', 'duration', 'category_id'])
+        );
 
         return redirect()->route('office.services.index')
             ->with('success', 'Service created successfully.');
@@ -124,6 +132,8 @@ class ServiceController extends Controller
             'required_documents.*'   => 'string|max:255',
         ]);
 
+        $old = $service->only(['name', 'category_id', 'price', 'duration', 'required_documents']);
+
         $service->update([
             'name'               => $request->name,
             'category_id'        => $request->category_id,
@@ -131,6 +141,14 @@ class ServiceController extends Controller
             'duration'           => $request->duration,
             'required_documents' => $request->required_documents ?? [],
         ]);
+
+        ActivityLogger::updated(
+            'service',
+            $service->id,
+            "Updated service \"{$service->name}\"",
+            $old,
+            $service->only(['name', 'category_id', 'price', 'duration', 'required_documents'])
+        );
 
         return redirect()->route('office.services.index')
             ->with('success', 'Service updated successfully.');
@@ -140,6 +158,14 @@ class ServiceController extends Controller
     {
         $service = Services::findOrFail($id);
         $this->authorizeOffice($service);
+
+        ActivityLogger::deleted(
+            'service',
+            $service->id,
+            "Deleted service \"{$service->name}\"",
+            $service->only(['name', 'price', 'duration', 'category_id'])
+        );
+
         $service->delete();
 
         return redirect()->route('office.services.index')

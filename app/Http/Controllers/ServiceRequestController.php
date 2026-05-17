@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Events\RequestStatusUpdated;
 use App\Events\ServiceRequestCreated;
 use App\Models\Documents;
 use App\Models\RequestHistories;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Storage;
 
 class ServiceRequestController extends Controller
@@ -98,6 +100,14 @@ class ServiceRequestController extends Controller
         // Dispatch event to notify office
         ServiceRequestCreated::dispatch($serviceRequest);
 
+        $service = Services::find($validated['service_id']);
+        ActivityLogger::created(
+            'service_request',
+            $serviceRequest->id,
+            'Created service request #' . $serviceRequest->id . ($service ? " for \"{$service->name}\"" : ''),
+            $serviceRequest->only(['service_id', 'status', 'citizen_id'])
+        );
+
         // Handle document uploads
         if ($request->hasFile('documents')) {
             foreach ($request->file('documents') as $index => $file) {
@@ -177,6 +187,8 @@ class ServiceRequestController extends Controller
 
         $serviceRequest->status = $newStatus;
         $serviceRequest->save();
+
+        RequestStatusUpdated::dispatch($serviceRequest, $oldStatus, $newStatus);
 
         $historyData = [
             'service_request_id' => $serviceRequest->id,

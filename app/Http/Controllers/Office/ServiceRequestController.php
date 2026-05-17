@@ -6,22 +6,44 @@ use App\Events\RequestStatusUpdated;
 use App\Http\Controllers\Controller;
 use App\Models\ServiceRequests;
 use App\Models\Documents;
+use App\Models\Government_Offices;
 use App\Models\Office;
+use App\Services\ActivityLogger;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Mail;
 
 class ServiceRequestController extends Controller
 {
+    private function governmentOfficeId(): int
+    {
+        $profile = Office::where('user_id', Auth::id())->firstOrFail();
+
+        $governmentOffice = Government_Offices::where('user_id', Auth::id())->first();
+
+        if (! $governmentOffice) {
+            $governmentOffice = Government_Offices::create([
+                'user_id'         => Auth::id(),
+                'name'            => $profile->name,
+                'address'         => $profile->address,
+                'municipality_id' => $profile->municipality_id,
+                'contact_info'    => $profile->contact_info ?? $profile->phone ?? '',
+                'latitude'        => $profile->latitude ?? 0,
+                'longitude'       => $profile->longitude ?? 0,
+            ]);
+        }
+
+        return $governmentOffice->id;
+    }
+
     public function index(Request $request)
     {
-        $office = Office::where('user_id', Auth::id())->firstOrFail();
+        $governmentOfficeId = $this->governmentOfficeId();
 
         $query = ServiceRequests::with(['service', 'citizen', 'documents'])
-            ->whereHas('service', function ($q) use ($office) {
-                $q->where('office_id', $office->id);
+            ->whereHas('service', function ($q) use ($governmentOfficeId) {
+                $q->where('office_id', $governmentOfficeId);
             });
 
         // Filter by status
@@ -36,11 +58,11 @@ class ServiceRequestController extends Controller
 
     public function show($id)
     {
-        $office = Office::where('user_id', Auth::id())->firstOrFail();
+        $governmentOfficeId = $this->governmentOfficeId();
 
         $request = ServiceRequests::with(['service', 'citizen', 'documents', 'requestHistories'])
-            ->whereHas('service', function ($q) use ($office) {
-                $q->where('office_id', $office->id);
+            ->whereHas('service', function ($q) use ($governmentOfficeId) {
+                $q->where('office_id', $governmentOfficeId);
             })
             ->findOrFail($id);
 
@@ -53,10 +75,10 @@ class ServiceRequestController extends Controller
             'status' => 'required|string|in:Pending,In Review,Missing Documents,Approved,Rejected,Completed',
         ]);
 
-        $office = Office::where('user_id', Auth::id())->firstOrFail();
+        $governmentOfficeId = $this->governmentOfficeId();
 
-        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($office) {
-            $q->where('office_id', $office->id);
+        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
         })->findOrFail($id);
 
         $oldStatus = $serviceRequest->status;
@@ -90,15 +112,13 @@ class ServiceRequestController extends Controller
             'changed_by'         => Auth::id(),
         ]);
 
-        // Send email notification
-        try {
-            \Mail::to($serviceRequest->citizen->email)->send(
-                new \App\Mail\RequestStatusUpdateMail($serviceRequest, $oldStatus, $newStatus)
-            );
-        } catch (\Exception $e) {
-            // Log email sending failure but don't fail the request
-            \Log::error('Failed to send status update email: ' . $e->getMessage());
-        }
+        ActivityLogger::updated(
+            'service_request',
+            $serviceRequest->id,
+            "Updated service request #{$serviceRequest->id} status from {$oldStatus} to {$newStatus}",
+            ['status' => $oldStatus],
+            ['status' => $newStatus]
+        );
 
         return back()->with('success', 'Request status updated successfully.');
     }
@@ -110,10 +130,10 @@ class ServiceRequestController extends Controller
             'type'     => 'required|string',
         ]);
 
-        $office = Office::where('user_id', Auth::id())->firstOrFail();
+        $governmentOfficeId = $this->governmentOfficeId();
 
-        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($office) {
-            $q->where('office_id', $office->id);
+        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
         })->findOrFail($id);
 
         $file = $request->file('document');
@@ -131,10 +151,10 @@ class ServiceRequestController extends Controller
 
     public function downloadDocument($requestId, $documentId)
     {
-        $office = Office::where('user_id', Auth::id())->firstOrFail();
+        $governmentOfficeId = $this->governmentOfficeId();
 
-        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($office) {
-            $q->where('office_id', $office->id);
+        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
         })->findOrFail($requestId);
 
         $document = Documents::where('id', $documentId)
@@ -150,11 +170,11 @@ class ServiceRequestController extends Controller
      */
     public function generateSummary($id)
     {
-        $office = Office::where('user_id', Auth::id())->firstOrFail();
+        $governmentOfficeId = $this->governmentOfficeId();
 
         $serviceRequest = ServiceRequests::with(['service.office', 'citizen', 'requestHistories', 'documents'])
-            ->whereHas('service', function ($q) use ($office) {
-                $q->where('office_id', $office->id);
+            ->whereHas('service', function ($q) use ($governmentOfficeId) {
+                $q->where('office_id', $governmentOfficeId);
             })
             ->findOrFail($id);
 

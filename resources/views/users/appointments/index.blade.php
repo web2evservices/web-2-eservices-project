@@ -51,7 +51,7 @@
 
                                     <div class="d-flex align-items-center mb-2">
                                         <i class="bi bi-clock text-primary me-2"></i>
-                                        <span class="text-dark fw-medium">{{ $appt->time_slot }}</span>
+                                        <span class="text-dark fw-medium">{{ $appt->formatted_time_slot }}</span>
                                     </div>
                                     <div class="d-flex align-items-start">
                                         <i class="bi bi-geo-alt text-primary me-2 mt-1"></i>

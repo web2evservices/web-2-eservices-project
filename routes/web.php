@@ -9,6 +9,7 @@ use App\Http\Controllers\MunicipalityController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AdminActivityController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\Office\AppointmentController;
@@ -73,6 +74,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         ->name('admin.users.delete');
     Route::get('analytics', [AnalyticsController::class, 'index'])
         ->name('admin.analytics');
+    Route::get('activity', [AdminActivityController::class, 'index'])
+        ->name('admin.activity');
 });
 Route::middleware(['auth'])->group(function () {
 

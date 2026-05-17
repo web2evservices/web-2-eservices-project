@@ -3,20 +3,20 @@
 namespace App\Listeners;
 
 use App\Events\AppointmentReminderTriggered;
-use App\Events\NotificationBroadcast;
 use App\Mail\AppointmentReminderMail;
 use App\Mail\CitizenAppointmentReminderMail;
-use App\Models\Notification;
 use App\Services\Contracts\SmsServiceInterface;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Mail;
 
 class SendAppointmentReminderNotification
 {
     protected $smsService;
 
-    public function __construct(SmsServiceInterface $smsService)
-    {
+    public function __construct(
+        SmsServiceInterface $smsService,
+        protected NotificationService $notifications
+    ) {
         $this->smsService = $smsService;
     }
 
@@ -25,31 +25,26 @@ class SendAppointmentReminderNotification
         $appointment = $event->appointment;
         $service = $appointment->service;
         $office = $appointment->office;
-        $officeUser = $office->user;
+        $officeUser = $office?->user;
 
-        $officePhone = $office->phone;
-        $officeEmail = $office->email;
+        if (!$office || !$officeUser) {
+            Log::warning('Appointment reminder skipped: office user not found for appointment ' . $appointment->id);
+            return;
+        }
+
+        $officePhone = $office->contact_info ?? null;
+        $officeEmail = $officeUser->email;
         $citizenName = $appointment->citizen_name;
         $appointmentDate = $appointment->date->format('Y-m-d H:i');
 
-        // Create notification record
-        $officeNotification = Notification::create([
-            'user_id' => $officeUser->id,
-            'title' => 'Appointment Reminder',
-            'message' => "Reminder: Appointment with {$citizenName} tomorrow at {$appointmentDate}",
-            'type' => 'appointment_reminder',
-            'is_read' => false,
-        ]);
-        NotificationBroadcast::dispatch($officeNotification, $officeUser->id);
-
-        // Send email to office
-        try {
-            Mail::to($officeEmail)->send(
-                new AppointmentReminderMail($appointment, $service->name)
-            );
-        } catch (\Exception $e) {
-            \Log::error('Failed to send appointment reminder email: ' . $e->getMessage());
-        }
+        $this->notifications->notifyWithEmail(
+            $officeUser->id,
+            'Appointment Reminder',
+            "Reminder: Appointment with {$citizenName} tomorrow at {$appointmentDate}",
+            'appointment_reminder',
+            new AppointmentReminderMail($appointment, $service->name),
+            $officeEmail
+        );
 
         // Send SMS to office
         if ($officePhone) {
@@ -70,25 +65,20 @@ class SendAppointmentReminderNotification
         $officeName = $office->name ?? 'Government Office';
 
         if ($citizen || $citizenEmail) {
-            // Create notification record for citizen
             if ($citizen) {
-                $citizenNotification = Notification::create([
-                    'user_id' => $citizen->id,
-                    'title' => 'Appointment Reminder',
-                    'message' => "Reminder: Your appointment with {$officeName} is tomorrow at {$appointmentDate}",
-                    'type' => 'appointment_reminder',
-                    'is_read' => false,
-                ]);
-                NotificationBroadcast::dispatch($citizenNotification, $citizen->id);
-            }
-
-            // Send email to citizen
-            try {
-                Mail::to($citizenEmail)->send(
+                $this->notifications->notifyWithEmail(
+                    $citizen->id,
+                    'Appointment Reminder',
+                    "Reminder: Your appointment with {$officeName} is tomorrow at {$appointmentDate}",
+                    'appointment_reminder',
+                    new CitizenAppointmentReminderMail($appointment, $service->name, $officeName),
+                    $citizenEmail
+                );
+            } else {
+                $this->notifications->sendEmailIfReal(
+                    $citizenEmail,
                     new CitizenAppointmentReminderMail($appointment, $service->name, $officeName)
                 );
-            } catch (\Exception $e) {
-                Log::error('Failed to send appointment reminder email to citizen: ' . $e->getMessage());
             }
 
             // Send SMS to citizen

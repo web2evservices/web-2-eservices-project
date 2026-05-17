@@ -115,4 +115,16 @@ return [
         'name' => env('MAIL_FROM_NAME', env('APP_NAME', 'Laravel')),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Validate Email Domains (MX / A record check)
+    |--------------------------------------------------------------------------
+    |
+    | When true, outbound notification emails are only sent if the recipient
+    | domain has MX or A DNS records. Set to false in local dev if needed.
+    |
+    */
+
+    'validate_mx' => env('MAIL_VALIDATE_MX', true),
+
 ];
