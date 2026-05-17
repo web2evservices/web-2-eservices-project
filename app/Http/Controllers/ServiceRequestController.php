@@ -38,7 +38,7 @@ class ServiceRequestController extends Controller
 
     public function show($id)
     {
-        $request = ServiceRequests::with(['service.office', 'documents', 'requestHistories'])
+        $request = ServiceRequests::with(['service.office', 'documents', 'requestHistories', 'feedbacks'])
             ->where('id', $id)
             ->where('citizen_id', $this->actingAsId())
             ->firstOrFail();

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 class Users extends Model
 {
      public function offices() {
-        return $this->hasMany(Government_Offices::class, 'municipality_id');
+        return $this->hasMany(Government_Offices::class, 'user_id');
     }
 
     public function serviceRequests() {

@@ -178,6 +178,17 @@ Route::get('/track/{qrCode}', function ($qrCode) {
     return view('office.public.track', compact('request'));
 })->name('requests.track');
 
+// Demo payment pages (public, test-only)
+Route::get('/demo/payment', [App\Http\Controllers\DemoPaymentController::class, 'index'])->name('demo.payment');
+Route::post('/demo/payments/stripe/confirm', [App\Http\Controllers\DemoPaymentController::class, 'confirmStripe']);
+Route::post('/demo/payments/crypto/initiate', [App\Http\Controllers\DemoPaymentController::class, 'initiateCrypto']);
+Route::get('/demo/payments/receipt', [App\Http\Controllers\DemoPaymentController::class, 'receipt'])->name('demo.payments.receipt');
+
+// Backwards-compatible feedback endpoints (keep old paths working)
+Route::middleware(['auth', 'office'])->group(function () {
+    Route::get('/feedback', [FeedbackController::class, 'officeIndex']);
+    Route::post('/feedback/{id}/respond', [FeedbackController::class, 'respond']);
+});
 //        Person5         //
 // ── Public ────────────────────────────────────────────────────────────────
 Route::get('/offices/map', [OfficeDiscoveryController::class, 'index'])->name('offices.map');
@@ -191,8 +202,6 @@ Route::post('/webhooks/nowpayments', [PaymentController::class, 'nowPaymentsWebh
 Route::middleware(['auth'])->group(function () {
 
     // Payments
-    Route::get('/user/requests/{id}/payment',         [PaymentController::class, 'create'])->name('user.requests.payment.create');
-    Route::get('/user/requests/{id}/payment/receipt', [PaymentController::class, 'show'])->name('user.requests.payment.show');
     Route::get('/payments/{id}/crypto/estimate',      [PaymentController::class, 'cryptoEstimate'])->name('payments.crypto.estimate');
 
     // TEST mode (Stripe)
@@ -227,6 +236,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth', 'office'])->prefix('office')->name('office.')->group(function () {
     Route::get('/chat',           [ChatController::class, 'officeIndex'])->name('chat.index');
     Route::get('/chat/{userId}',  [ChatController::class, 'officeShow'])->name('chat.show');
+    Route::post('/chat/send',     [ChatController::class, 'send'])->name('chat.send');
     Route::get('/feedback',       [FeedbackController::class, 'officeIndex'])->name('feedback.index');
     Route::post('/feedback/{id}/respond', [FeedbackController::class, 'respond'])->name('feedback.respond');
 });

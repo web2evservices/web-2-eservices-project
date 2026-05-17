@@ -24,23 +24,29 @@
         padding: 1.5rem;
         background: #fdfdfd;
     }
+    .message-item {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+    }
+    .message-item.sent {
+        align-items: flex-end;
+    }
+    .message-item.received {
+        align-items: flex-start;
+    }
     .message-bubble {
         max-width: 70%;
-        padding: 1rem;
+        padding: 0.8rem 1rem;
         border-radius: 1rem;
-        margin-bottom: 1rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    }
-    .message-sent {
         background: #0d6efd;
         color: #fff;
-        border-bottom-right-radius: 0.2rem;
+    }
+    .message-sent {
         margin-left: auto;
     }
     .message-received {
-        background: #e9ecef;
-        color: #2b3440;
-        border-bottom-left-radius: 0.2rem;
         margin-right: auto;
     }
     .chat-input {
@@ -66,6 +72,7 @@
     .message-received .file-attachment {
         background: rgba(0,0,0,0.05);
     }
+    .message-time { font-size: 0.7rem; opacity: 0.8; }
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -87,7 +94,7 @@
             submitBtn.html('<i class="bi bi-hourglass-split"></i>').prop('disabled', true);
 
             $.ajax({
-                url: "{{ route('chat.send') }}",
+                url: $('#chatForm').data('action'),
                 type: "POST",
                 data: formData,
                 processData: false,
@@ -98,7 +105,7 @@
                 success: function(response) {
                     $('#messageInput').val('');
                     $('#attachmentInput').val('');
-                    
+
                     // Add message to UI
                     let msg = response.data;
                     let attachmentHtml = '';
@@ -106,12 +113,19 @@
                         let fileName = msg.attachment.split('/').pop();
                         attachmentHtml = `<br><a href="/storage/${msg.attachment}" target="_blank" class="file-attachment"><i class="bi bi-paperclip me-2"></i>${fileName}</a>`;
                     }
-                    
+
+                    let timeStr = 'Just now';
+                    try {
+                        timeStr = new Intl.DateTimeFormat('en-US', {hour:'numeric', minute:'numeric', hour12:true, timeZone:'Asia/Beirut'}).format(new Date(msg.created_at));
+                    } catch(e) {}
+
                     let html = `
-                        <div class="message-bubble message-sent">
-                            <div>${msg.message}</div>
-                            ${attachmentHtml}
-                            <div class="text-end mt-1" style="font-size: 0.7rem; opacity: 0.8;">Just now</div>
+                        <div class="message-item sent">
+                            <div class="message-bubble message-sent">
+                                <div>${msg.message}</div>
+                                ${attachmentHtml}
+                                <div class="text-end mt-1 message-time">${timeStr}</div>
+                            </div>
                         </div>
                     `;
                     $('#chatMessages').append(html);
@@ -119,10 +133,12 @@
                     submitBtn.html(originalText).prop('disabled', false);
                 },
                 error: function(xhr) {
+                    console.error('Chat send failed', xhr.status, xhr.responseText);
                     alert('Error sending message. Please try again.');
                     submitBtn.html(originalText).prop('disabled', false);
                 }
             });
+            return false;
         });
     });
 </script>
@@ -152,24 +168,31 @@
 
         <div class="chat-messages" id="chatMessages">
             @foreach($messages as $msg)
-                @php $isSent = $msg->sender_id === auth()->id(); @endphp
-                <div class="message-bubble {{ $isSent ? 'message-sent' : 'message-received' }}">
-                    <div>{{ $msg->message }}</div>
-                    @if($msg->attachment)
-                        <br>
-                        <a href="{{ asset('storage/' . $msg->attachment) }}" target="_blank" class="file-attachment">
-                            <i class="bi bi-paperclip me-2"></i> Attachment
-                        </a>
-                    @endif
-                    <div class="text-end mt-1" style="font-size: 0.7rem; {{ $isSent ? 'opacity: 0.8;' : 'color: #8c98a4;' }}">
-                        {{ $msg->created_at->format('h:i A') }}
+                @php
+                    $isSent = $msg->sender_id === auth()->id();
+                    $senderRole = $msg->sender->role ?? 'citizen';
+                    $displayName = $isSent ? auth()->user()->username : ($msg->sender->username ?? 'User');
+                    $avatarLabel = $isSent ? 'You' : 'Office';
+                    $timeStr = $msg->created_at->timezone('Asia/Beirut')->format('h:i A');
+                @endphp
+                <div class="message-item {{ $isSent ? 'sent' : 'received' }}">
+                    <div class="message-bubble message-sent {{ $isSent ? 'message-sent' : 'message-received' }}">
+                        <div>{{ $msg->message }}</div>
+                        @if($msg->attachment)
+                            <br>
+                            <a href="{{ asset('storage/' . $msg->attachment) }}" target="_blank" class="file-attachment">
+                                <i class="bi bi-paperclip me-2"></i> {{ basename($msg->attachment) }}
+                            </a>
+                        @endif
+                        <div class="text-end mt-1 message-time" style="{{ $isSent ? 'opacity: 0.8;' : 'color: #8c98a4;' }}">{{ $timeStr }}</div>
                     </div>
                 </div>
             @endforeach
         </div>
 
         <div class="chat-input">
-            <form id="chatForm" enctype="multipart/form-data">
+            <form id="chatForm" method="POST" action="javascript:void(0)" data-action="{{ route('chat.send') }}" enctype="multipart/form-data">
+                @csrf
                 <input type="hidden" name="receiver_id" value="{{ $otherUser->id }}">
                 <div class="input-group">
                     <label class="input-group-text bg-light border-0 cursor-pointer" for="attachmentInput" style="cursor: pointer;">

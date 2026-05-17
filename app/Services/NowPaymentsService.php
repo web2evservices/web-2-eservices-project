@@ -1,6 +1,7 @@
 <?php
 namespace App\Services;
 
+use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -30,12 +31,49 @@ class NowPaymentsService
             'cancel_url'        => $data['cancel_url'],
         ];
 
-        $response = Http::withHeaders(['x-api-key' => $this->apiKey])
-            ->post("{$this->baseUrl}/invoice", $payload);
+        try {
+            $response = Http::withHeaders(['x-api-key' => $this->apiKey])
+                ->post("{$this->baseUrl}/invoice", $payload);
+        } catch (ConnectionException $exception) {
+            Log::warning('NOWPayments connection failed', [
+                'base_url' => $this->baseUrl,
+                'message'  => $exception->getMessage(),
+            ]);
+
+            if (str_contains($this->baseUrl, 'sandbox.nowpayments.io')) {
+                $liveBaseUrl = 'https://api.nowpayments.io/v1';
+                Log::info('Retrying NOWPayments request against live endpoint', ['live_base_url' => $liveBaseUrl]);
+
+                try {
+                    $response = Http::withHeaders(['x-api-key' => $this->apiKey])
+                        ->post("{$liveBaseUrl}/invoice", $payload);
+                } catch (ConnectionException $retryException) {
+                    Log::error('NOWPayments live retry failed', [
+                        'base_url' => $liveBaseUrl,
+                        'message'  => $retryException->getMessage(),
+                    ]);
+
+                    return [
+                        'success' => false,
+                        'error'   => 'NOWPayments connection failed. Please check your network and API configuration.',
+                    ];
+                }
+            } else {
+                return [
+                    'success' => false,
+                    'error'   => 'NOWPayments connection failed. Please check your network and API configuration.',
+                ];
+            }
+        }
 
         if ($response->failed()) {
-            Log::error('NOWPayments invoice failed', $response->json());
-            return ['success' => false, 'error' => $response->json()['message'] ?? 'NOWPayments error'];
+            $body = $response->json();
+            Log::error('NOWPayments invoice failed', $body);
+            $errorMessage = 'NOWPayments error';
+            if (is_array($body)) {
+                $errorMessage = $body['message'] ?? $body['error'] ?? $body['error_message'] ?? $errorMessage;
+            }
+            return ['success' => false, 'error' => $errorMessage];
         }
 
         $body = $response->json();

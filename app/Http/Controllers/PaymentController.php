@@ -264,9 +264,27 @@ class PaymentController extends Controller
     // ── Crypto estimate helper ────────────────────────────────────────────────
     public function cryptoEstimate(Request $request, $requestId)
     {
-        $serviceRequest = ServiceRequests::with('service')->findOrFail($requestId);
+        $serviceRequest = ServiceRequests::with('service')->find($requestId);
+
+        if (! $serviceRequest) {
+            return response()->json(['error' => 'Service request not found.'], 404);
+        }
+
+        if ($serviceRequest->citizen_id !== Auth::id()) {
+            return response()->json(['error' => 'Unauthorized access to this service request.'], 403);
+        }
+
+        if (! $serviceRequest->service) {
+            return response()->json(['error' => 'Service details missing for this request.'], 404);
+        }
+
         $currency = $request->query('currency', 'usdttrc20');
         $estimate = $this->nowpayments->estimateAmount($serviceRequest->service->price, $currency);
+
+        if ($estimate === null) {
+            return response()->json(['error' => 'Unable to retrieve crypto estimate.'], 502);
+        }
+
         return response()->json(['estimated_amount' => $estimate]);
     }
 

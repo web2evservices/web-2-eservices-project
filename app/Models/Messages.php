@@ -6,6 +6,8 @@ use Illuminate\Database\Eloquent\Model;
 
 class Messages extends Model
 {
+    protected $guarded = [];
+
    public function sender() {
         return $this->belongsTo(Users::class, 'sender_id');
     }

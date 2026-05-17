@@ -24,23 +24,30 @@
         padding: 1.5rem;
         background: #fdfdfd;
     }
+    .message-item {
+        display: flex;
+        flex-direction: column;
+        margin-bottom: 1rem;
+    }
+    .message-item.sent {
+        align-items: flex-end;
+    }
+    .message-item.received {
+        align-items: flex-start;
+    }
     .message-bubble {
         max-width: 70%;
-        padding: 1rem;
+        padding: 0.8rem 1rem;
         border-radius: 1rem;
-        margin-bottom: 1rem;
         box-shadow: 0 2px 5px rgba(0,0,0,0.02);
-    }
-    .message-sent {
         background: #0d6efd;
         color: #fff;
-        border-bottom-right-radius: 0.2rem;
+        border: none;
+    }
+    .message-sent {
         margin-left: auto;
     }
     .message-received {
-        background: #e9ecef;
-        color: #2b3440;
-        border-bottom-left-radius: 0.2rem;
         margin-right: auto;
     }
     .chat-input {
@@ -66,6 +73,16 @@
     .message-received .file-attachment {
         background: rgba(0,0,0,0.05);
     }
+    .message-office { border-left: 4px solid #0d6efd; }
+    .message-citizen { border-left: 4px solid #6c757d; }
+    .message-time { font-size: 0.7rem; opacity: 0.8; }
+    .message-header { display:flex; align-items:center; gap:0.75rem; margin-bottom:0.35rem; }
+    .msg-avatar { width:36px; height:36px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:#fff; }
+    .avatar-office { background:#0d6efd; }
+    .avatar-citizen { background:#6c757d; }
+    .sender-name { font-weight:600; font-size:0.95rem; }
+    .role-badge { font-size:0.65rem; padding:2px 6px; border-radius:12px; background:rgba(0,0,0,0.05); margin-left:6px; }
+    .message-bubble { padding:0.8rem 1rem; }
 </style>
 <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 <script>
@@ -86,7 +103,7 @@
             submitBtn.html('<i class="bi bi-hourglass-split"></i>').prop('disabled', true);
 
             $.ajax({
-                url: "{{ route('chat.send') }}",
+                url: $('#chatForm').data('action'),
                 type: "POST",
                 data: formData,
                 processData: false,
@@ -97,19 +114,30 @@
                 success: function(response) {
                     $('#messageInput').val('');
                     $('#attachmentInput').val('');
-                    
+
                     let msg = response.data;
                     let attachmentHtml = '';
                     if (msg.attachment) {
                         let fileName = msg.attachment.split('/').pop();
                         attachmentHtml = `<br><a href="/storage/${msg.attachment}" target="_blank" class="file-attachment"><i class="bi bi-paperclip me-2"></i>${fileName}</a>`;
                     }
-                    
+
+                    let roleClass = (msg.sender && msg.sender.role === 'office_user') ? 'message-office' : 'message-citizen';
+                    let timeStr = 'Just now';
+                    try {
+                        timeStr = new Intl.DateTimeFormat('en-US', {hour:'numeric', minute:'numeric', hour12:true, timeZone:'Asia/Beirut'}).format(new Date(msg.created_at));
+                    } catch(e) {}
+
+                    let currentUserId = '{{ auth()->id() }}';
+                    let isSent = msg.sender && msg.sender.id == currentUserId;
+                    let avatarClass = isSent ? 'sent' : 'received';
                     let html = `
-                        <div class="message-bubble message-sent">
+                        <div class="message-item ${avatarClass}">
+                          <div class="message-bubble message-sent ${roleClass}">
                             <div>${msg.message}</div>
                             ${attachmentHtml}
-                            <div class="text-end mt-1" style="font-size: 0.7rem; opacity: 0.8;">Just now</div>
+                            <div class="text-end mt-1 message-time">${timeStr}</div>
+                          </div>
                         </div>
                     `;
                     $('#chatMessages').append(html);
@@ -117,10 +145,12 @@
                     submitBtn.html(originalText).prop('disabled', false);
                 },
                 error: function(xhr) {
+                    console.error('Chat send failed', xhr.status, xhr.responseText);
                     alert('Error sending message. Please try again.');
                     submitBtn.html(originalText).prop('disabled', false);
                 }
             });
+            return false;
         });
     });
 </script>
@@ -147,24 +177,30 @@
 
         <div class="chat-messages" id="chatMessages">
             @foreach($messages as $msg)
-                @php $isSent = $msg->sender_id === auth()->id(); @endphp
-                <div class="message-bubble {{ $isSent ? 'message-sent' : 'message-received' }}">
-                    <div>{{ $msg->message }}</div>
-                    @if($msg->attachment)
-                        <br>
-                        <a href="{{ asset('storage/' . $msg->attachment) }}" target="_blank" class="file-attachment">
-                            <i class="bi bi-paperclip me-2"></i> Attachment
-                        </a>
-                    @endif
-                    <div class="text-end mt-1" style="font-size: 0.7rem; {{ $isSent ? 'opacity: 0.8;' : 'color: #8c98a4;' }}">
-                        {{ $msg->created_at->format('h:i A') }}
+                @php
+                    $isSent = $msg->sender_id === auth()->id();
+                    $senderRole = $msg->sender->role ?? 'citizen';
+                    $avatarLabel = $isSent ? 'Office' : 'User';
+                    $timeStr = $msg->created_at->timezone('Asia/Beirut')->format('h:i A');
+                @endphp
+                <div class="message-item {{ $isSent ? 'sent' : 'received' }}">
+                    <div class="message-bubble message-sent {{ $senderRole === 'office_user' ? 'message-office' : 'message-citizen' }}">
+                        <div>{{ $msg->message }}</div>
+                        @if($msg->attachment)
+                            <br>
+                            <a href="{{ asset('storage/' . $msg->attachment) }}" target="_blank" class="file-attachment">
+                                <i class="bi bi-paperclip me-2"></i> {{ basename($msg->attachment) }}
+                            </a>
+                        @endif
+                        <div class="text-end mt-1 message-time" style="opacity: 0.8;">{{ $timeStr }}</div>
                     </div>
                 </div>
             @endforeach
         </div>
 
         <div class="chat-input">
-            <form id="chatForm" enctype="multipart/form-data">
+            <form id="chatForm" method="POST" action="javascript:void(0)" data-action="{{ route('office.chat.send') }}" enctype="multipart/form-data">
+                @csrf
                 <input type="hidden" name="receiver_id" value="{{ $otherUser->id }}">
                 <div class="input-group">
                     <label class="input-group-text bg-light border-0 cursor-pointer" for="attachmentInput" style="cursor: pointer;">

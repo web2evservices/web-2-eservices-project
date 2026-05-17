@@ -1,7 +1,6 @@
 <?php
 namespace App\Http\Controllers;
 
-use App\Events\NewMessageEvent;
 use App\Models\Messages;
 use App\Models\User;
 use App\Models\Notifications;
@@ -66,8 +65,6 @@ class ChatController extends Controller
             'message'            => $validated['message'],
             'attachment'         => $attachmentPath,
         ]);
-
-        event(new NewMessageEvent($msg));
 
         // Notify receiver
         Notifications::create([

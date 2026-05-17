@@ -12,8 +12,9 @@ class FeedbackController extends Controller
     public function store(Request $request, $requestId)
     {
         $validated = $request->validate([
-            'rating'  => 'required|integer|min:1|max:5',
-            'comment' => 'nullable|string|max:1000',
+            'rating'   => 'sometimes|integer|min:1|max:5',
+            'comment'  => 'nullable|string|max:1000',
+            'response' => 'nullable|string|max:1000',
         ]);
 
         $serviceRequest = ServiceRequests::where('id', $requestId)
@@ -29,11 +30,14 @@ class FeedbackController extends Controller
             return response()->json(['error' => 'Feedback already submitted.'], 409);
         }
 
+        $rating = $validated['rating'] ?? 5;
+        $comment = $validated['comment'] ?? ($validated['response'] ?? null);
+
         $feedback = Feddback::create([
             'service_request_id' => $serviceRequest->id,
             'citizen_id'         => Auth::id(),
-            'rating'             => $validated['rating'],
-            'comment'            => $validated['comment'] ?? null,
+            'rating'             => $rating,
+            'comment'            => $comment,
         ]);
 
         return response()->json(['message' => 'Feedback submitted', 'data' => $feedback], 201);

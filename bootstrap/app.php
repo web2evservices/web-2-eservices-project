@@ -14,6 +14,9 @@ return Application::configure(basePath: dirname(__DIR__))
     $middleware->validateCsrfTokens(except: [
         'webhooks/tap',
         'webhooks/nowpayments',
+        'office/feedback/*/respond',
+        'user/requests/*/feedback',
+        'payments/*/stripe/confirm',
     ]);
      $middleware->alias([
             'admin' => \App\Http\Middleware\AdminMiddleware::class,
