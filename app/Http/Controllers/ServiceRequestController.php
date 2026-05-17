@@ -6,6 +6,7 @@ use App\Models\Documents;
 use App\Models\RequestHistories;
 use App\Models\ServiceRequests;
 use App\Models\Services;
+use App\Services\NotificationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -86,6 +87,8 @@ class ServiceRequestController extends Controller
             'documents.*.type' => 'required_with:documents|string',
         ]);
 
+        $service = Services::with('office')->findOrFail($validated['service_id']);
+
         $serviceRequest = ServiceRequests::create([
             'citizen_id'     => $this->actingAsId(),
             'service_id'     => $validated['service_id'],
@@ -93,6 +96,21 @@ class ServiceRequestController extends Controller
             'qr_code'        => (string) Str::uuid(),
             'appointment_id' => $validated['appointment_id'] ?? null,
         ]);
+        
+            NotificationService::sendToAdmins(
+                'New request submitted',
+                "New request #{$serviceRequest->id} was submitted for {$service->name}.",
+                'admin_activity'
+            );
+
+        if ($officeUserId = $service->office?->user_id) {
+            NotificationService::send(
+                $officeUserId,
+                'New request received',
+                "A new request #{$serviceRequest->id} has been submitted for {$service->name}.",
+                'request_received'
+            );
+        }
 
         // Handle document uploads
         if ($request->hasFile('documents')) {
@@ -185,6 +203,28 @@ class ServiceRequestController extends Controller
         }
 
         RequestHistories::create($historyData);
+        
+            NotificationService::sendToAdmins(
+                'Request status changed',
+                "Request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
+                'admin_activity'
+            );
+
+        NotificationService::send(
+            $serviceRequest->citizen_id,
+            'Request status updated',
+            "Your request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
+            'request_status'
+        );
+
+        if ($newStatus === 'Missing Documents') {
+            NotificationService::send(
+                $serviceRequest->citizen_id,
+                'Documents required for request',
+                "Your request #{$serviceRequest->id} requires additional documents. Please upload the requested files to continue processing.",
+                'document_required'
+            );
+        }
 
         return response()->json([
             'message' => 'Status updated successfully',

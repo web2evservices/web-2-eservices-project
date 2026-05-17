@@ -7,8 +7,12 @@ use App\Models\Appointments;
 use App\Models\Office;
 use App\Models\Services;
 use App\Models\Users;
+use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AppointmentController extends Controller
 {
@@ -63,12 +67,20 @@ class AppointmentController extends Controller
             ->where('office_id', $office->id)
             ->firstOrFail();
 
-        $citizenId = Users::where('email', $validated['citizen_email'])->value('id');
+        $citizen = User::firstOrCreate(
+            ['email' => $validated['citizen_email']],
+            [
+                'username' => $validated['citizen_name'] ?: explode('@', $validated['citizen_email'])[0],
+                'password' => Str::random(16),
+                'role' => 'citizen',
+                'tel' => $validated['citizen_phone'] ?? null,
+            ]
+        );
 
-        Appointments::create([
+        $appointment = Appointments::create([
             'office_id' => $office->id,
             'service_id' => $validated['service_id'],
-            'citizen_id' => $citizenId,
+            'citizen_id' => $citizen->id,
             'citizen_name' => $validated['citizen_name'],
             'citizen_email' => $validated['citizen_email'],
             'citizen_phone' => $validated['citizen_phone'],
@@ -77,6 +89,19 @@ class AppointmentController extends Controller
             'status' => 'Scheduled',
             'notes' => $validated['notes'],
         ]);
+
+        NotificationService::send(
+            $citizen->id,
+            'Appointment assigned',
+            "Your appointment for {$service->name} is scheduled for {$validated['appointment_date']} at {$validated['appointment_time']}.",
+            'appointment_assigned'
+        );
+
+        NotificationService::sendToAdmins(
+            'Appointment assigned',
+            "Appointment #{$appointment->id} for {$service->name} was assigned to {$citizen->email}.",
+            'admin_activity'
+        );
 
         return redirect()->route('office.appointments.index')->with('success', 'Appointment scheduled successfully.');
     }
@@ -127,7 +152,18 @@ class AppointmentController extends Controller
         $updateData = $validated;
         $updateData['date'] = $validated['appointment_date'];
         $updateData['time_slot'] = $validated['appointment_time'];
-        $updateData['citizen_id'] = Users::where('email', $validated['citizen_email'])->value('id');
+
+        $citizen = User::firstOrCreate(
+            ['email' => $validated['citizen_email']],
+            [
+                'username' => $validated['citizen_name'] ?: explode('@', $validated['citizen_email'])[0],
+                'password' => Str::random(16),
+                'role' => 'citizen',
+                'tel' => $validated['citizen_phone'] ?? null,
+            ]
+        );
+
+        $updateData['citizen_id'] = $citizen->id;
         unset($updateData['appointment_date'], $updateData['appointment_time']);
 
         $appointment->update($updateData);

@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ServiceRequests;
 use App\Models\Documents;
 use App\Models\Office;
+use App\Services\NotificationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -86,6 +87,28 @@ class ServiceRequestController extends Controller
             'changed_by'         => Auth::id(),
         ]);
 
+        NotificationService::send(
+            $serviceRequest->citizen_id,
+            'Request status updated',
+            "Your request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
+            'request_status'
+        );
+
+        NotificationService::sendToAdmins(
+            'Request status changed',
+            "Request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
+            'admin_activity'
+        );
+
+        if ($newStatus === 'Missing Documents') {
+            NotificationService::send(
+                $serviceRequest->citizen_id,
+                'Documents required for request',
+                "Your request #{$serviceRequest->id} requires additional documents. Please upload the requested files to continue processing.",
+                'document_required'
+            );
+        }
+
         // Send email notification
         try {
             \Mail::to($serviceRequest->citizen->email)->send(
@@ -121,6 +144,17 @@ class ServiceRequestController extends Controller
             'document_type'      => $validated['type'],
             'file_path'          => $path,
         ]);
+
+        if ($officeUserId = $office->user_id) {
+            if ($officeUserId !== Auth::id()) {
+                NotificationService::send(
+                    $officeUserId,
+                    'Request documents updated',
+                    "Documents were attached to request #{$serviceRequest->id}.",
+                    'request_documents'
+                );
+            }
+        }
 
         return back()->with('success', 'Document uploaded successfully.');
     }
