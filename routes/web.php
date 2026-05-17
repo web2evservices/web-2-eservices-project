@@ -20,6 +20,7 @@ use App\Http\Controllers\Office\OfficeProfileController;
 use App\Http\Controllers\Office\QrCodeController;
 use App\Http\Controllers\PaymentController;
 use App\Http\Controllers\PublicServiceController;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return view('welcome');
