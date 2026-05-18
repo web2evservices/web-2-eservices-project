@@ -175,6 +175,57 @@ class UserController extends Controller
         return redirect()->route('admin.users.index');
     }
     
+    public function accountView()
+{
+    $user = Auth::user();
+    return view('user-account', compact('user'));
+}
+
+public function updateProfile(Request $request)
+{
+    $user = Auth::user();
+
+    $rules = [
+        'username' => 'required|string|max:100|unique:users,username,' . $user->id,
+        'email'    => 'required|email|unique:users,email,' . $user->id,
+        'tel'      => 'required|min:8|unique:users,tel,' . $user->id,
+    ];
+
+    if ($request->filled('password')) {
+        $rules['current_password'] = 'required';
+        $rules['password']         = 'required|min:6|confirmed';
+    }
+
+    $request->validate($rules);
+
+    if ($request->filled('current_password')) {
+        if (!Hash::check($request->current_password, $user->password)) {
+            return back()->withErrors(['current_password' => 'Current password is incorrect.'])->withInput();
+        }
+    }
+
+    $user->username = $request->username;
+    $user->email    = $request->email;
+    $user->tel      = $request->tel;
+
+    if ($request->filled('password')) {
+        $user->password = Hash::make($request->password);
+    }
+
+    $user->save();
+
+    return redirect('/user-account')->with('success', 'Profile updated successfully.');
+}
+
+public function toggle2FA(Request $request)
+{
+    $user = Auth::user();
+    $user->two_factor_enabled = !$user->two_factor_enabled;
+    $user->save();
+
+    $status = $user->two_factor_enabled ? 'enabled' : 'disabled';
+    return redirect('/user-account')->with('success', "Two-factor authentication {$status} successfully.");
+}
     public function logout()
     {
         Auth::logout();

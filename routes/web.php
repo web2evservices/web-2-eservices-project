@@ -26,6 +26,7 @@ use App\Http\Controllers\ChatController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\CitizenAppointmentController;
 use App\Http\Controllers\OfficeDiscoveryController;
+use Illuminate\Support\Facades\Auth;
 
 Route::get('/', function () {
     return view('welcome');
@@ -36,7 +37,6 @@ Route::get('/login', [UserController::class, 'LoginView']);
 Route::post('/login', [UserController::class, 'Login'])->name('login');
 
 Route::post('/create', [UserController::class, 'create']);
-
 
 Route::get('/otp-verify',  [UserController::class, 'otpView']);
 Route::post('/otp-verify', [UserController::class, 'otpVerify']);
@@ -81,6 +81,12 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])
         ->name('user.dashboard');
+
+    Route::get('/user-account',            [UserController::class, 'accountView'])  ->name('user.account');
+    
+    Route::put('/user-account',            [UserController::class, 'updateProfile'])->name('user.account.update');
+    
+    Route::post('/user-account/toggle-2fa',[UserController::class, 'toggle2FA'])   ->name('user.account.toggle2fa');
 
     Route::get('/user/requests', [ServiceRequestController::class, 'pageIndex'])
         ->name('user.requests.index');

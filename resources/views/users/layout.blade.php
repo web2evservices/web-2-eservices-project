@@ -113,7 +113,7 @@
         </ul>
         <div class="p-3 border-top border-secondary">
             @auth
-                <small class="text-muted d-block mb-2">{{ auth()->user()->username }}</small>
+                <a href="/user-account" style="text-decoration: none;"><small class="text-muted d-block mb-2" >{{ auth()->user()->username }}</small></a>
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
                     <button type="submit" class="btn btn-outline-light btn-sm w-100">
