@@ -236,4 +236,17 @@ class NotificationService
     ): AppointmentEventMail {
         return new AppointmentEventMail($appointment, $subject, $subject, $body, $recipientName);
     }
+    public function send(int $userId, string $title, string $message, string $type = 'notification'): void
+{
+    $this->notify($userId, $title, $message, $type);
+}
+
+public function sendToAdmins(string $title, string $message, string $type = 'notification'): void
+{
+    $admins = User::where('role', 'admin')->get();
+
+    foreach ($admins as $admin) {
+        $this->notify($admin->id, $title, $message, $type);
+    }
+}
 }

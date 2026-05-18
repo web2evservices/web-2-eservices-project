@@ -19,6 +19,7 @@ use Illuminate\Support\Facades\Storage;
 
 class ServiceRequestController extends Controller
 {
+    public function __construct(private NotificationService $notificationService) {}
     // ---------------------------------------------------------------------------
     // Temporary helper — remove ?? 1 fallback when auth is live
     // ---------------------------------------------------------------------------
@@ -100,20 +101,20 @@ class ServiceRequestController extends Controller
             'appointment_id' => $validated['appointment_id'] ?? null,
         ]);
         
-            NotificationService::sendToAdmins(
-                'New request submitted',
-                "New request #{$serviceRequest->id} was submitted for {$service->name}.",
-                'admin_activity'
-            );
+         $this->notificationService->sendToAdmins(
+    'New request submitted',
+    "New request #{$serviceRequest->id} was submitted for {$service->name}.",
+    'admin_activity'
+);
 
-        if ($officeUserId = $service->office?->user_id) {
-            NotificationService::send(
-                $officeUserId,
-                'New request received',
-                "A new request #{$serviceRequest->id} has been submitted for {$service->name}.",
-                'request_received'
-            );
-        }
+if ($officeUserId = $service->office?->user_id) {
+    $this->notificationService->send(
+        $officeUserId,
+        'New request received',
+        "A new request #{$serviceRequest->id} has been submitted for {$service->name}.",
+        'request_received'
+    );
+}
 
         // Dispatch event to notify office
         ServiceRequestCreated::dispatch($serviceRequest);
@@ -147,6 +148,7 @@ class ServiceRequestController extends Controller
             'message' => 'Request created successfully',
             'data'    => $serviceRequest,
         ], 201);
+        
     }
 
     // ---------------------------------------------------------------------------
@@ -220,27 +222,27 @@ class ServiceRequestController extends Controller
 
         RequestHistories::create($historyData);
         
-            NotificationService::sendToAdmins(
-                'Request status changed',
-                "Request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
-                'admin_activity'
-            );
+           $this->notificationService->sendToAdmins(
+    'Request status changed',
+    "Request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
+    'admin_activity'
+);
 
-        NotificationService::send(
-            $serviceRequest->citizen_id,
-            'Request status updated',
-            "Your request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
-            'request_status'
-        );
+$this->notificationService->send(
+    $serviceRequest->citizen_id,
+    'Request status updated',
+    "Your request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
+    'request_status'
+);
 
-        if ($newStatus === 'Missing Documents') {
-            NotificationService::send(
-                $serviceRequest->citizen_id,
-                'Documents required for request',
-                "Your request #{$serviceRequest->id} requires additional documents. Please upload the requested files to continue processing.",
-                'document_required'
-            );
-        }
+if ($newStatus === 'Missing Documents') {
+    $this->notificationService->send(
+        $serviceRequest->citizen_id,
+        'Documents required for request',
+        "Your request #{$serviceRequest->id} requires additional documents. Please upload the requested files to continue processing.",
+        'document_required'
+    );
+}
 
         return response()->json([
             'message' => 'Status updated successfully',
