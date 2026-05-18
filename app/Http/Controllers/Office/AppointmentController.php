@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Appointments;
 use App\Models\Office;
 use App\Models\Services;
-use App\Models\Users;
+use App\Models\User;
 use App\Services\ActivityLogger;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
