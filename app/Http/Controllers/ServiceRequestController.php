@@ -1,194 +1,96 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Office;
 
 use App\Events\RequestStatusUpdated;
-use App\Events\ServiceRequestCreated;
-use App\Models\Documents;
-use App\Models\RequestHistories;
+use App\Http\Controllers\Controller;
 use App\Models\ServiceRequests;
-use App\Models\Services;
+use App\Models\Documents;
+use App\Models\Government_Offices;
+use App\Models\Office;
+use App\Models\RequestHistories;
+use App\Services\ActivityLogger;
 use App\Services\NotificationService;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Str;
-use App\Services\ActivityLogger;
 use Illuminate\Support\Facades\Storage;
 
 class ServiceRequestController extends Controller
 {
-    public function __construct(private NotificationService $notificationService) {}
-    // ---------------------------------------------------------------------------
-    // Temporary helper — remove ?? 1 fallback when auth is live
-    // ---------------------------------------------------------------------------
-    private function actingAsId(): int
+    private function governmentOfficeId(): int
     {
-        return Auth::id() ?? 1;
-    }
+        $profile = Office::where('user_id', Auth::id())->firstOrFail();
 
-    // ---------------------------------------------------------------------------
-    // Citizen-facing endpoints
-    // ---------------------------------------------------------------------------
+        $governmentOffice = Government_Offices::where('user_id', Auth::id())->first();
 
-    public function index()
-    {
-        $requests = ServiceRequests::with(['service.office', 'documents', 'requestHistories'])
-            ->where('citizen_id', $this->actingAsId())
-            ->get();
-
-        return response()->json(['data' => $requests]);
-    }
-
-    public function show($id)
-    {
-        $request = ServiceRequests::with(['service.office', 'documents', 'requestHistories', 'feedbacks'])
-            ->where('id', $id)
-            ->where('citizen_id', $this->actingAsId())
-            ->firstOrFail();
-
-        return response()->json(['data' => $request]);
-    }
-
-    public function pageIndex()
-    {
-        $services = Services::with('office')->get();
-        $requests = ServiceRequests::with(['service.office', 'documents', 'requestHistories'])
-            ->where('citizen_id', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        return view('users.requests.index', compact('services', 'requests'));
-    }
-
-    public function pageCreate(Request $request)
-    {
-        $serviceId = $request->query('service_id');
-        $service = null;
-
-        if ($serviceId) {
-            $service = Services::with(['office', 'category'])->findOrFail($serviceId);
+        if (!$governmentOffice) {
+            $governmentOffice = Government_Offices::create([
+                'user_id'         => Auth::id(),
+                'name'            => $profile->name,
+                'address'         => $profile->address,
+                'municipality_id' => $profile->municipality_id,
+                'contact_info'    => $profile->contact_info ?? $profile->phone ?? '',
+                'latitude'        => $profile->latitude ?? 0,
+                'longitude'       => $profile->longitude ?? 0,
+            ]);
         }
 
-        $services = Services::with(['office', 'category'])->get();
-
-        return view('users.requests.create', compact('service', 'services'));
+        return $governmentOffice->id;
     }
 
-    public function pageShow($id)
+    public function index(Request $request)
     {
-        return view('users.requests.show', compact('id'));
-    }
+        $governmentOfficeId = $this->governmentOfficeId();
 
-    public function store(Request $request)
-    {
-        $validated = $request->validate([
-            'service_id'     => 'required|integer|exists:services,id',
-            'appointment_id' => 'nullable|integer|exists:appointments,id',
-            'documents'      => 'nullable|array',
-            'documents.*.file' => 'required_with:documents|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
-            'documents.*.type' => 'required_with:documents|string',
-        ]);
-
-        $service = Services::with('office')->findOrFail($validated['service_id']);
-
-        $serviceRequest = ServiceRequests::create([
-            'citizen_id'     => $this->actingAsId(),
-            'service_id'     => $validated['service_id'],
-            'status'         => 'Pending',
-            'qr_code'        => (string) Str::uuid(),
-            'appointment_id' => $validated['appointment_id'] ?? null,
-        ]);
-        
-         $this->notificationService->sendToAdmins(
-    'New request submitted',
-    "New request #{$serviceRequest->id} was submitted for {$service->name}.",
-    'admin_activity'
-);
-
-if ($officeUserId = $service->office?->user_id) {
-    $this->notificationService->send(
-        $officeUserId,
-        'New request received',
-        "A new request #{$serviceRequest->id} has been submitted for {$service->name}.",
-        'request_received'
-    );
-}
-
-        // Dispatch event to notify office
-        ServiceRequestCreated::dispatch($serviceRequest);
-
-        $service = Services::find($validated['service_id']);
-        ActivityLogger::created(
-            'service_request',
-            $serviceRequest->id,
-            'Created service request #' . $serviceRequest->id . ($service ? " for \"{$service->name}\"" : ''),
-            $serviceRequest->only(['service_id', 'status', 'citizen_id'])
-        );
-
-        // Handle document uploads
-        if ($request->hasFile('documents')) {
-            foreach ($request->file('documents') as $index => $file) {
-                if ($file) {
-                    $documentType = $request->input("documents.{$index}.type", 'uploaded');
-                    $fileName = time() . '_' . $file->getClientOriginalName();
-                    $path = $file->storeAs('documents', $fileName, 'public');
-
-                    Documents::create([
-                        'service_request_id' => $serviceRequest->id,
-                        'document_type'      => $documentType,
-                        'file_path'          => $path,
-                    ]);
-                }
-            }
-        }
-
-        return response()->json([
-            'message' => 'Request created successfully',
-            'data'    => $serviceRequest,
-        ], 201);
-        
-    }
-
-    // ---------------------------------------------------------------------------
-    // Admin-facing endpoints
-    // ---------------------------------------------------------------------------
-
-    public function adminIndex(Request $request)
-    {
-        $query = ServiceRequests::with(['documents', 'requestHistories']);
+        $query = ServiceRequests::with(['service', 'citizen', 'documents'])
+            ->whereHas('service', function ($q) use ($governmentOfficeId) {
+                $q->where('office_id', $governmentOfficeId);
+            });
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
         }
 
-        $requests = $query->orderBy('created_at', 'desc')->get();
+        $requests = $query
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
 
-        return response()->json(['data' => $requests]);
+        return view('office.requests.index', compact('requests'));
+    }
+
+    public function show($id)
+    {
+        $governmentOfficeId = $this->governmentOfficeId();
+
+        $request = ServiceRequests::with([
+            'service',
+            'citizen',
+            'documents',
+            'requestHistories'
+        ])
+        ->whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
+        })
+        ->findOrFail($id);
+
+        return view('office.requests.show', compact('request'));
     }
 
     public function updateStatus(Request $request, $id)
     {
         $validated = $request->validate([
-            'status' => 'required|string',
+            'status' => 'required|string|in:Pending,In Review,Missing Documents,Approved,Rejected,Completed',
         ]);
 
-        $newStatus = $this->resolveStatus($validated['status']);
+        $governmentOfficeId = $this->governmentOfficeId();
 
-        if ($newStatus === null) {
-            return response()->json(['message' => 'Invalid status value.'], 422);
-        }
+        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
+        })->findOrFail($id);
 
-        $serviceRequest = ServiceRequests::findOrFail($id);
-        $oldStatus      = $serviceRequest->status;
-
-        if ($newStatus === $oldStatus) {
-            return response()->json([
-                'message' => 'Status is already set to this value.',
-                'data'    => $serviceRequest,
-            ]);
-        }
+        $oldStatus = $serviceRequest->status;
+        $newStatus = $validated['status'];
 
         $allowedTransitions = [
             'Pending'           => ['In Review'],
@@ -200,104 +102,145 @@ if ($officeUserId = $service->office?->user_id) {
         ];
 
         if (!in_array($newStatus, $allowedTransitions[$oldStatus] ?? [], true)) {
-            return response()->json([
-                'message' => "Invalid status transition from '{$oldStatus}' to '{$newStatus}'.",
-            ], 400);
+            return back()->withErrors([
+                'status' => "Invalid status transition from '{$oldStatus}' to '{$newStatus}'."
+            ]);
         }
 
         $serviceRequest->status = $newStatus;
         $serviceRequest->save();
 
-        RequestStatusUpdated::dispatch($serviceRequest, $oldStatus, $newStatus);
+        RequestStatusUpdated::dispatch(
+            $serviceRequest,
+            $oldStatus,
+            $newStatus
+        );
 
-        $historyData = [
+        RequestHistories::create([
             'service_request_id' => $serviceRequest->id,
             'old_status'         => $oldStatus,
             'new_status'         => $newStatus,
-        ];
-
-        if (Schema::hasColumn('request_histories', 'changed_by')) {
-            $historyData['changed_by'] = $this->actingAsId();
-        }
-
-        RequestHistories::create($historyData);
-        
-           $this->notificationService->sendToAdmins(
-    'Request status changed',
-    "Request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
-    'admin_activity'
-);
-
-$this->notificationService->send(
-    $serviceRequest->citizen_id,
-    'Request status updated',
-    "Your request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
-    'request_status'
-);
-
-if ($newStatus === 'Missing Documents') {
-    $this->notificationService->send(
-        $serviceRequest->citizen_id,
-        'Documents required for request',
-        "Your request #{$serviceRequest->id} requires additional documents. Please upload the requested files to continue processing.",
-        'document_required'
-    );
-}
-
-        return response()->json([
-            'message' => 'Status updated successfully',
-            'data'    => $serviceRequest,
+            'changed_by'         => Auth::id(),
         ]);
+
+        ActivityLogger::updated(
+            'service_request',
+            $serviceRequest->id,
+            "Updated service request #{$serviceRequest->id} status from {$oldStatus} to {$newStatus}",
+            ['status' => $oldStatus],
+            ['status' => $newStatus]
+        );
+
+        NotificationService::send(
+            $serviceRequest->citizen_id,
+            'Request Status Updated',
+            "Your request #{$serviceRequest->id} status changed from {$oldStatus} to {$newStatus}.",
+            'request_status'
+        );
+
+        return back()->with('success', 'Request status updated successfully.');
     }
 
-    public function generatePdf($id)
+    public function uploadDocument(Request $request, $id)
     {
-        $serviceRequest = ServiceRequests::where('id', $id)
-            ->where('citizen_id', $this->actingAsId())
-            ->with(['service.office', 'citizen', 'requestHistories', 'documents'])
+        $validated = $request->validate([
+            'document' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:10240',
+            'type'     => 'required|string',
+        ]);
+
+        $governmentOfficeId = $this->governmentOfficeId();
+
+        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
+        })->findOrFail($id);
+
+        $file = $request->file('document');
+
+        $fileName = time() . '_' . $file->getClientOriginalName();
+
+        $path = $file->storeAs(
+            'documents',
+            $fileName,
+            'public'
+        );
+
+        Documents::create([
+            'service_request_id' => $serviceRequest->id,
+            'document_type'      => $validated['type'],
+            'file_path'          => $path,
+        ]);
+
+        NotificationService::send(
+            $serviceRequest->citizen_id,
+            'New Document Uploaded',
+            "A new document was uploaded to your request #{$serviceRequest->id}.",
+            'request_documents'
+        );
+
+        return back()->with('success', 'Document uploaded successfully.');
+    }
+
+    public function downloadDocument($requestId, $documentId)
+    {
+        $governmentOfficeId = $this->governmentOfficeId();
+
+        $serviceRequest = ServiceRequests::whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
+        })->findOrFail($requestId);
+
+        $document = Documents::where('id', $documentId)
+            ->where('service_request_id', $serviceRequest->id)
             ->firstOrFail();
 
-        $pdf = Pdf::loadView('pdf.request', ['request' => $serviceRequest]);
+        $filePath = storage_path('app/public/' . $document->file_path);
+
+        return response()->download($filePath);
+    }
+
+    public function generateSummary($id)
+    {
+        $governmentOfficeId = $this->governmentOfficeId();
+
+        $serviceRequest = ServiceRequests::with([
+            'service.office',
+            'citizen',
+            'requestHistories',
+            'documents'
+        ])
+        ->whereHas('service', function ($q) use ($governmentOfficeId) {
+            $q->where('office_id', $governmentOfficeId);
+        })
+        ->findOrFail($id);
+
+        $pdf = Pdf::loadView('pdf.request', [
+            'request' => $serviceRequest
+        ]);
+
         $fileName = 'request_' . $serviceRequest->id . '_summary.pdf';
-        $path     = 'documents/' . $fileName;
 
-        Storage::disk('public')->put($path, $pdf->output());
+        $path = 'documents/' . $fileName;
 
-        $document = Documents::create([
+        Storage::disk('public')->put(
+            $path,
+            $pdf->output()
+        );
+
+        Documents::create([
             'service_request_id' => $serviceRequest->id,
             'document_type'      => 'generated',
             'file_path'          => $path,
         ]);
 
-        return response()->json([
-            'message' => 'PDF summary generated successfully.',
-            'data' => $document,
-            'download_url' => route('user.requests.documents.download', [
-                'requestId' => $serviceRequest->id,
-                'documentId' => $document->id,
-            ]),
-        ]);
-    }
+        NotificationService::send(
+            $serviceRequest->citizen_id,
+            'PDF Summary Generated',
+            "A PDF summary was generated for your request #{$serviceRequest->id}.",
+            'pdf_generated'
+        );
 
-    // ---------------------------------------------------------------------------
-    // Helpers
-    // ---------------------------------------------------------------------------
-
-    private function resolveStatus(string $raw): ?string
-    {
-        $normalized = preg_replace('/(?<!^)([A-Z])/', ' $1', $raw);
-        $normalized = str_replace(['_', '-'], ' ', $normalized);
-        $normalized = strtolower(trim(preg_replace('/\s+/', ' ', $normalized)));
-
-        $map = [
-            'pending'           => 'Pending',
-            'in review'         => 'In Review',
-            'missing documents' => 'Missing Documents',
-            'approved'          => 'Approved',
-            'rejected'          => 'Rejected',
-            'completed'         => 'Completed',
-        ];
-
-        return $map[$normalized] ?? null;
+        return back()->with(
+            'success',
+            'PDF request summary generated successfully.'
+        );
     }
 }
