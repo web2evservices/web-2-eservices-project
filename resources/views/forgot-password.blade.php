@@ -17,8 +17,7 @@
                     <span style="color: green; font-weight: 600">{{ session('status') }}</span>
                 @endif
 
-                <input type="email" name="email" value="{{ $user->email }}" readonly 
-                       placeholder="Email" required>
+                <input type="email" name="email" placeholder="Email" required>
                 @error('email')
                     <span style="color: red; font-weight: 600">{{ $message }}</span>
                 @enderror
