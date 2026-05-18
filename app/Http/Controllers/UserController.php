@@ -103,7 +103,7 @@ class UserController extends Controller
         }
 
         if (now()->timestamp > $expires) {
-            session()->forget(['2fa_user_id', '2fa_otp', '2fa_expires']);
+            session()?->forget(['2fa_user_id', '2fa_otp', '2fa_expires']);
             return redirect('/login')->withErrors(['login' => 'OTP expired. Please log in again.']);
         }
 
@@ -112,7 +112,7 @@ class UserController extends Controller
         }
 
         $user = User::findOrFail($userId);
-        session()->forget(['2fa_user_id', '2fa_otp', '2fa_expires']);
+        session()?->forget(['2fa_user_id', '2fa_otp', '2fa_expires']);
 
         Auth::login($user);
 

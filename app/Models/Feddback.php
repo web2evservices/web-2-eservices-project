@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use App\Services\NotificationService;
 
 class Feddback extends Model
 {
@@ -20,7 +21,8 @@ class Feddback extends Model
         return $this->belongsTo(ServiceRequests::class);
     }
 
-    public function citizen() {
+    public function citizen()
+    {
         return $this->belongsTo(Users::class, 'citizen_id');
     }
 }

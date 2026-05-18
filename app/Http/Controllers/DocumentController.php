@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Documents;
 use App\Models\ServiceRequests;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -26,6 +27,22 @@ class DocumentController extends Controller
             'document_type' => 'uploaded',
             'file_path' => $path
         ]);
+
+            NotificationService::sendToAdmins(
+                'Documents uploaded',
+                "Documents were uploaded for request #{$serviceRequest->id}.",
+                'admin_activity'
+            );
+
+        $serviceRequest->load(['service.office']);
+        if ($officeUserId = $serviceRequest->service?->office?->user_id) {
+            NotificationService::send(
+                $officeUserId,
+                'Request documents added',
+                "New documents were uploaded for request #{$serviceRequest->id}.",
+                'request_documents'
+            );
+        }
 
         return response()->json([
             'message' => 'Document uploaded successfully',

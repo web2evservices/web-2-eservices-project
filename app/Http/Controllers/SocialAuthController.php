@@ -8,7 +8,7 @@ use Laravel\Socialite\Facades\Socialite;
 
 class SocialAuthController extends Controller
 {
-    protected array $providers = ['google', 'github', 'linkedin-openid', 'facebook'];
+    protected array $providers = ['google', 'github'];
 
     public function redirect(string $provider)
     {
@@ -43,6 +43,13 @@ class SocialAuthController extends Controller
 
         Auth::login($user, remember: true);
 
-        return view('users.dashboard');
+        if ($user->role === 'admin') {
+        return redirect()->route('admin.dashboard');
+    } elseif ($user->role === 'office_user') {
+        return redirect()->route('office.dashboard');
+    } else {
+        return redirect()->route('user.dashboard');
+
+    }
     }
 }

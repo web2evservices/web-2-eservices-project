@@ -148,6 +148,11 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/user/notifications/{id}/read',    [\App\Http\Controllers\User\NotificationController::class, 'markRead'])    ->name('user.notifications.mark-read');
 });
 
+Route::post('/payments/stripe/webhook', [PaymentController::class, 'stripeWebhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+Route::post('/payments/coinbase/webhook', [PaymentController::class, 'coinbaseWebhook'])
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);
+
 
 // =============================================
 // PERSON 3: Government Office Routes

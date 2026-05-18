@@ -11,6 +11,8 @@ use App\Services\ActivityLogger;
 use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class AppointmentController extends Controller
 {
@@ -66,12 +68,20 @@ class AppointmentController extends Controller
             ->where('office_id', $office->id)
             ->firstOrFail();
 
-        $citizenId = Users::where('email', $validated['citizen_email'])->value('id');
+        $citizen = User::firstOrCreate(
+            ['email' => $validated['citizen_email']],
+            [
+                'username' => $validated['citizen_name'] ?: explode('@', $validated['citizen_email'])[0],
+                'password' => Str::random(16),
+                'role' => 'citizen',
+                'tel' => $validated['citizen_phone'] ?? null,
+            ]
+        );
 
         $appointment = Appointments::create([
             'office_id' => $office->id,
             'service_id' => $validated['service_id'],
-            'citizen_id' => $citizenId,
+            'citizen_id' => $citizen->id,
             'citizen_name' => $validated['citizen_name'],
             'citizen_email' => $validated['citizen_email'],
             'citizen_phone' => $validated['citizen_phone'],
@@ -166,7 +176,18 @@ class AppointmentController extends Controller
         $updateData = $validated;
         $updateData['date'] = $validated['appointment_date'];
         $updateData['time_slot'] = $validated['appointment_time'];
-        $updateData['citizen_id'] = Users::where('email', $validated['citizen_email'])->value('id');
+
+        $citizen = User::firstOrCreate(
+            ['email' => $validated['citizen_email']],
+            [
+                'username' => $validated['citizen_name'] ?: explode('@', $validated['citizen_email'])[0],
+                'password' => Str::random(16),
+                'role' => 'citizen',
+                'tel' => $validated['citizen_phone'] ?? null,
+            ]
+        );
+
+        $updateData['citizen_id'] = $citizen->id;
         unset($updateData['appointment_date'], $updateData['appointment_time']);
 
         $appointment->update($updateData);

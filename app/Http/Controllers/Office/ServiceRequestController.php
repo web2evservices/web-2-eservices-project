@@ -146,6 +146,17 @@ class ServiceRequestController extends Controller
             'file_path'          => $path,
         ]);
 
+        if ($officeUserId = $office->user_id) {
+            if ($officeUserId !== Auth::id()) {
+                NotificationService::send(
+                    $officeUserId,
+                    'Request documents updated',
+                    "Documents were attached to request #{$serviceRequest->id}.",
+                    'request_documents'
+                );
+            }
+        }
+
         return back()->with('success', 'Document uploaded successfully.');
     }
 
