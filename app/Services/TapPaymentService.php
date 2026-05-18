@@ -1,4 +1,39 @@
 <?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Log;
+
+class TapPaymentService
+{
+    public function __construct()
+    {
+        // Disabled safely (prevents crash)
+    }
+
+    public function createCharge(array $data): array
+    {
+        Log::info('TapPaymentService disabled - using Stripe instead');
+
+        return [
+            'success' => false,
+            'error' => 'Tap is disabled. Use Stripe payment method.',
+        ];
+    }
+
+    public function retrieveCharge(string $chargeId): array
+    {
+        return [
+            'success' => false,
+            'error' => 'Tap is disabled. Use Stripe payment method.',
+        ];
+    }
+}
+
+/* if API exsits in .env:
+
+    
+<?php
 namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
@@ -58,3 +93,5 @@ class TapPaymentService
         return ['success' => true, 'status' => $body['status'], 'charge_id' => $body['id']];
     }
 }
+
+ */

@@ -1,4 +1,40 @@
 <?php
+
+namespace App\Services;
+
+use Illuminate\Support\Facades\Log;
+
+class NowPaymentsService
+{
+    public function __construct()
+    {
+        // Disabled safely
+    }
+
+    public function createInvoice(array $data): array
+    {
+        Log::info('NowPayments disabled - using Stripe instead');
+
+        return [
+            'success' => false,
+            'error' => 'NowPayments disabled. Use Stripe payment method.',
+        ];
+    }
+
+    public function estimateAmount(float $usdAmount, string $currency = 'usdttrc20'): ?float
+    {
+        return null;
+    }
+
+    public function verifyWebhookSignature(string $rawBody, string $signature): bool
+    {
+        return false;
+    }
+}
+
+/* if API exsits in .env:
+
+    <?php
 namespace App\Services;
 
 use Illuminate\Http\Client\ConnectionException;
@@ -100,3 +136,4 @@ class NowPaymentsService
         return hash_equals($expected, $signature);
     }
 }
+*/

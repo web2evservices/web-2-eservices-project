@@ -7,11 +7,14 @@ use App\Models\Appointments;
 use App\Models\Office;
 use App\Models\Services;
 use App\Models\Users;
+use App\Services\ActivityLogger;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
 class AppointmentController extends Controller
 {
+    public function __construct(protected NotificationService $notifications) {}
     public function index(Request $request)
     {
         $office = Office::where('user_id', Auth::id())->firstOrFail();
@@ -65,7 +68,7 @@ class AppointmentController extends Controller
 
         $citizenId = Users::where('email', $validated['citizen_email'])->value('id');
 
-        Appointments::create([
+        $appointment = Appointments::create([
             'office_id' => $office->id,
             'service_id' => $validated['service_id'],
             'citizen_id' => $citizenId,
@@ -77,6 +80,38 @@ class AppointmentController extends Controller
             'status' => 'Scheduled',
             'notes' => $validated['notes'],
         ]);
+
+        $when = $validated['appointment_date'] . ' at ' . $validated['appointment_time'];
+
+        $this->notifications->notifyWithEmail(
+            Auth::id(),
+            'Appointment Scheduled',
+            "You scheduled an appointment for {$validated['citizen_name']} on {$when}.",
+            'appointment_reminder',
+            new \App\Mail\AppointmentEventMail(
+                $appointment,
+                'Appointment Scheduled',
+                'Appointment Scheduled',
+                "You scheduled an appointment for {$validated['citizen_name']} on {$when}.",
+                Auth::user()->username ?? 'Office Staff'
+            )
+        );
+
+        $this->notifications->notifyCitizenForAppointment(
+            $appointment,
+            'Appointment Scheduled',
+            "An appointment has been scheduled for you on {$when}.",
+            'appointment_reminder',
+            'Appointment Scheduled',
+            "An appointment has been scheduled for you on {$when}."
+        );
+
+        ActivityLogger::created(
+            'appointment',
+            $appointment->id,
+            "Scheduled appointment for {$validated['citizen_name']} on {$when}",
+            $appointment->only(['service_id', 'citizen_name', 'date', 'time_slot', 'status'])
+        );
 
         return redirect()->route('office.appointments.index')->with('success', 'Appointment scheduled successfully.');
     }
@@ -120,9 +155,13 @@ class AppointmentController extends Controller
         $appointment = Appointments::where('office_id', $office->id)->findOrFail($id);
 
         // Check if the service belongs to this office
-        $service = Services::where('id', $validated['service_id'])
+        Services::where('id', $validated['service_id'])
             ->where('office_id', $office->id)
             ->firstOrFail();
+
+        $oldStatus = $appointment->status;
+        $when      = $validated['appointment_date'] . ' at ' . $validated['appointment_time'];
+        $oldData   = $appointment->only(['service_id', 'citizen_name', 'date', 'time_slot', 'status']);
 
         $updateData = $validated;
         $updateData['date'] = $validated['appointment_date'];
@@ -131,6 +170,46 @@ class AppointmentController extends Controller
         unset($updateData['appointment_date'], $updateData['appointment_time']);
 
         $appointment->update($updateData);
+        $appointment->refresh();
+
+        $statusChanged = $oldStatus !== $validated['status'];
+
+        if ($statusChanged && $validated['status'] === 'Cancelled') {
+            $this->notifications->notifyBothForAppointment(
+                $appointment,
+                'Appointment Cancelled',
+                "Your appointment on {$when} has been cancelled by the office.",
+                'Appointment Cancelled',
+                "Appointment for {$validated['citizen_name']} on {$when} was cancelled.",
+                'appointment_reminder'
+            );
+        } elseif ($statusChanged) {
+            $this->notifications->notifyBothForAppointment(
+                $appointment,
+                'Appointment Status Updated',
+                "Your appointment on {$when} is now: {$validated['status']}.",
+                'Appointment Status Updated',
+                "Appointment for {$validated['citizen_name']} is now: {$validated['status']}.",
+                'appointment_reminder'
+            );
+        } else {
+            $this->notifications->notifyBothForAppointment(
+                $appointment,
+                'Appointment Updated',
+                "Your appointment has been updated to {$when}.",
+                'Appointment Updated',
+                "Appointment for {$validated['citizen_name']} was updated to {$when}.",
+                'appointment_reminder'
+            );
+        }
+
+        ActivityLogger::updated(
+            'appointment',
+            $appointment->id,
+            "Updated appointment for {$validated['citizen_name']} on {$when}",
+            $oldData,
+            $appointment->only(['service_id', 'citizen_name', 'date', 'time_slot', 'status'])
+        );
 
         return redirect()->route('office.appointments.show', $appointment->id)->with('success', 'Appointment updated successfully.');
     }
@@ -140,6 +219,40 @@ class AppointmentController extends Controller
         $office = Office::where('user_id', Auth::id())->firstOrFail();
 
         $appointment = Appointments::where('office_id', $office->id)->findOrFail($id);
+
+        $when = $appointment->date->format('Y-m-d') . ' at ' . $appointment->time_slot;
+        $name = $appointment->citizen_name;
+
+        ActivityLogger::deleted(
+            'appointment',
+            $appointment->id,
+            "Deleted appointment for {$name} on {$when}",
+            $appointment->only(['service_id', 'citizen_name', 'date', 'time_slot', 'status'])
+        );
+
+        $this->notifications->notifyWithEmail(
+            Auth::id(),
+            'Appointment Deleted',
+            "Appointment for {$name} on {$when} was removed.",
+            'appointment_reminder',
+            new \App\Mail\AppointmentEventMail(
+                $appointment,
+                'Appointment Deleted',
+                'Appointment Deleted',
+                "Appointment for {$name} on {$when} was removed.",
+                Auth::user()->username ?? 'Office Staff'
+            )
+        );
+
+        $this->notifications->notifyCitizenForAppointment(
+            $appointment,
+            'Appointment Deleted',
+            "Your appointment on {$when} was removed by the office.",
+            'appointment_reminder',
+            'Appointment Deleted',
+            "Your appointment on {$when} was removed by the office."
+        );
+
         $appointment->delete();
 
         return redirect()->route('office.appointments.index')->with('success', 'Appointment deleted successfully.');

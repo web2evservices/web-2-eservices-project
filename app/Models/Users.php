@@ -6,6 +6,17 @@ use Illuminate\Database\Eloquent\Model;
 
 class Users extends Model
 {
+    protected $table = 'users';
+
+    protected $fillable = [
+        'username',
+        'email',
+        'password',
+        'tel',
+        'role',
+        'status',
+    ];
+
      public function offices() {
         return $this->hasMany(Government_Offices::class, 'user_id');
     }

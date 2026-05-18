@@ -9,9 +9,11 @@ use App\Http\Controllers\MunicipalityController;
 use App\Http\Controllers\OfficeController;
 use App\Http\Controllers\AdminUserController;
 use App\Http\Controllers\AnalyticsController;
+use App\Http\Controllers\AdminActivityController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\ServiceRequestController;
 use App\Http\Controllers\Office\AppointmentController;
+use App\Http\Controllers\Office\NotificationController;
 use App\Http\Controllers\Office\ServiceRequestController as OfficeServiceRequestController;
 use App\Http\Controllers\Office\ServiceCategoryController;
 use App\Http\Controllers\Office\ServiceController;
@@ -72,6 +74,8 @@ Route::prefix('admin')->middleware(['auth', 'admin'])->group(function () {
         ->name('admin.users.delete');
     Route::get('analytics', [AnalyticsController::class, 'index'])
         ->name('admin.analytics');
+    Route::get('activity', [AdminActivityController::class, 'index'])
+        ->name('admin.activity');
 });
 Route::middleware(['auth'])->group(function () {
 
@@ -118,6 +122,30 @@ Route::middleware(['auth'])->group(function () {
         $filePath = storage_path('app/public/' . $document->file_path);
         return response()->download($filePath);
     })->name('user.requests.documents.download');
+
+    // Feedback Routes
+    Route::post('/requests/{serviceRequestId}/feedback', [\App\Http\Controllers\FeedbackController::class, 'store'])
+        ->name('requests.feedback.store');
+    Route::get('/requests/{serviceRequestId}/feedback', [\App\Http\Controllers\FeedbackController::class, 'show'])
+        ->name('requests.feedback.show');
+
+    // Messages Routes
+    Route::get('/messages', [\App\Http\Controllers\MessagesController::class, 'index'])
+        ->name('messages.index');
+    Route::post('/messages', [\App\Http\Controllers\MessagesController::class, 'store'])
+        ->name('messages.store');
+    Route::get('/messages/{id}', [\App\Http\Controllers\MessagesController::class, 'show'])
+        ->name('messages.show');
+    Route::delete('/messages/{id}', [\App\Http\Controllers\MessagesController::class, 'destroy'])
+        ->name('messages.destroy');
+    Route::get('/messages/{messageId}/attachment', [\App\Http\Controllers\MessagesController::class, 'downloadAttachment'])
+        ->name('messages.attachment.download');
+
+    // User/Citizen Notifications
+    Route::get('/user/notifications',                [\App\Http\Controllers\User\NotificationController::class, 'index'])       ->name('user.notifications.index');
+    Route::get('/user/notifications/count',          [\App\Http\Controllers\User\NotificationController::class, 'unreadCount']) ->name('user.notifications.count');
+    Route::patch('/user/notifications/mark-all-read',[\App\Http\Controllers\User\NotificationController::class, 'markAllRead'])->name('user.notifications.mark-all-read');
+    Route::patch('/user/notifications/{id}/read',    [\App\Http\Controllers\User\NotificationController::class, 'markRead'])    ->name('user.notifications.mark-read');
 });
 
 
@@ -167,7 +195,14 @@ Route::prefix('office')->middleware(['auth', 'office'])->name('office.')->group(
     Route::get('/requests/{requestId}/documents/{documentId}/download', [OfficeServiceRequestController::class, 'downloadDocument'])->name('requests.download-document');
 
     // Appointments Management
+// Appointments Management
     Route::resource('appointments', AppointmentController::class)->names('appointments');
+
+    // Notifications
+    Route::get('/notifications',                [NotificationController::class, 'index'])       ->name('notifications.index');
+    Route::get('/notifications/count',          [NotificationController::class, 'unreadCount']) ->name('notifications.count');
+    Route::patch('/notifications/mark-all-read',[NotificationController::class, 'markAllRead'])->name('notifications.mark-all-read');
+    Route::patch('/notifications/{id}/read',    [NotificationController::class, 'markRead'])    ->name('notifications.mark-read');
 });
 
 // Public QR tracking page — no login required

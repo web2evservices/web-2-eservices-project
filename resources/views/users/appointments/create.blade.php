@@ -125,10 +125,22 @@
                                     <input type="hidden" name="time_slot" id="time_slot_input" required>
                                     <div class="d-flex flex-wrap gap-2">
                                         @php
-                                            $slots = ['09:00 AM', '09:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '01:00 PM', '01:30 PM', '02:00 PM', '02:30 PM', '03:00 PM'];
+                                            $slots = [
+                                                '09:00:00' => '09:00 AM',
+                                                '09:30:00' => '09:30 AM',
+                                                '10:00:00' => '10:00 AM',
+                                                '10:30:00' => '10:30 AM',
+                                                '11:00:00' => '11:00 AM',
+                                                '11:30:00' => '11:30 AM',
+                                                '13:00:00' => '01:00 PM',
+                                                '13:30:00' => '01:30 PM',
+                                                '14:00:00' => '02:00 PM',
+                                                '14:30:00' => '02:30 PM',
+                                                '15:00:00' => '03:00 PM',
+                                            ];
                                         @endphp
-                                        @foreach($slots as $slot)
-                                            <button type="button" class="btn btn-outline-primary time-slot-btn rounded-pill px-4" data-time="{{ $slot }}">{{ $slot }}</button>
+                                        @foreach($slots as $value => $label)
+                                            <button type="button" class="btn btn-outline-primary time-slot-btn rounded-pill px-4" data-time="{{ $value }}">{{ $label }}</button>
                                         @endforeach
                                     </div>
                                 </div>

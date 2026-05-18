@@ -31,6 +31,7 @@
         @endif
     </td>
     <td>
+    @if ($u->role != 'admin')
     <form method="POST" action="/admin/users/{{ $u->id }}/toggle" class="d-inline">
         @csrf
         @method('PATCH')
@@ -49,11 +50,7 @@
 
         <option value="office_user" {{ $u->role == 'office_user' ? 'selected' : '' }}>
             Office User
-        </option>
-
-        <option value="admin" {{ $u->role == 'admin' ? 'selected' : '' }}>
-            Admin
-        </option>
+</option>
     </select>
     <button class="btn btn-primary btn-sm">
         Update Role
@@ -66,6 +63,7 @@
                 Delete
             </button>
 </form>
+@endif
 </td>
 </tr>
 @endforeach
